@@ -18,6 +18,11 @@ export class PrototypeService {
   readonly search = this._search.asReadonly();
   readonly activeTags = this._activeTags.asReadonly();
   readonly sha = this._sha.asReadonly();
+  readonly all = this._prototypes.asReadonly();
+
+  findById(id: string): Prototype | undefined {
+    return this._prototypes().find((p) => p.id === id);
+  }
 
   readonly allTags = computed(() => {
     const tags = new Set<string>();

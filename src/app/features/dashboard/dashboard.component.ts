@@ -1,11 +1,13 @@
 import { Component, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PrototypeService } from '../../core/services/prototype.service';
+import { UiStateService } from '../../core/services/ui-state.service';
 import { PrototypeCardComponent } from '../prototype-card/prototype-card.component';
 import { TagFilterComponent } from '../tag-filter/tag-filter.component';
 import { SearchBarComponent } from '../search-bar/search-bar.component';
 import { AddPrototypeModalComponent } from '../add-prototype/add-prototype-modal.component';
 import { Prototype } from '../../core/models/prototype.model';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 @Component({
   selector: 'dl-dashboard',
@@ -111,8 +113,13 @@ import { Prototype } from '../../core/models/prototype.model';
 })
 export class DashboardComponent implements OnInit {
   svc = inject(PrototypeService);
+  private ui = inject(UiStateService);
   showModal = false;
   editingPrototype: Prototype | null = null;
+
+  constructor() {
+    this.ui.triggerAdd$.pipe(takeUntilDestroyed()).subscribe(() => this.openAdd());
+  }
 
   ngOnInit() { this.svc.load(); }
 

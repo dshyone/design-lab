@@ -1,0 +1,32 @@
+[
+  {
+    "id": "ligentix-logo-primary",
+    "name": "Ligentix primary logo",
+    "type": "svg",
+    "description": "Primary Ligentix wordmark in SVG format. Use for prototypes, mockups, and stakeholder decks.",
+    "file": "assets/ligentix-logo.svg",
+    "tags": ["brand", "logo"],
+    "addedBy": "Chuka",
+    "date": "2026-04-22"
+  },
+  {
+    "id": "booking-table-template",
+    "name": "Booking table template",
+    "type": "html",
+    "description": "Standard booking management table with sticky header, action column, and status badges. Angular-ready.",
+    "file": "assets/booking-table-template.html",
+    "tags": ["table", "booking", "template"],
+    "addedBy": "Chuka",
+    "date": "2026-04-22"
+  },
+  {
+    "id": "client-settings-template",
+    "name": "Client settings template",
+    "type": "html",
+    "description": "Two-column settings layout with section headers and form controls matching SwiftDS patterns.",
+    "file": "assets/client-settings-template.html",
+    "tags": ["settings", "template", "form"],
+    "addedBy": "Craig",
+    "date": "2026-04-22"
+  }
+]

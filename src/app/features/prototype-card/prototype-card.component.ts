@@ -188,7 +188,7 @@ export class PrototypeCardComponent {
   }
 
   copyLink() {
-    const url = `https://github.com/${environment.githubOwner}/${environment.githubRepo}/tree/${environment.githubBranch}/${this.prototype.folder}`;
+    const url = `${window.location.origin}/prototype/${this.prototype.id}`;
     navigator.clipboard.writeText(url).then(() => {
       this.copied = true;
       setTimeout(() => (this.copied = false), 2000);
