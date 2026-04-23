@@ -1,5 +1,6 @@
-import { Component, Input, Output, EventEmitter, ChangeDetectionStrategy } from '@angular/core';
+import { Component, Input, Output, EventEmitter, ChangeDetectionStrategy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { Prototype } from '../../core/models/prototype.model';
 import { environment } from '../../../environments/environment';
 
@@ -9,7 +10,7 @@ import { environment } from '../../../environments/environment';
   imports: [CommonModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <article class="card" (click)="openFolder()">
+    <article class="card" (click)="openDetail()">
       <div class="thumbnail">
         <img
           *ngIf="prototype.thumbnail; else placeholder"
@@ -174,6 +175,7 @@ export class PrototypeCardComponent {
   @Input({ required: true }) prototype!: Prototype;
   @Output() edit = new EventEmitter<Prototype>();
 
+  private router = inject(Router);
   copied = false;
   imgError = false;
 
@@ -182,9 +184,8 @@ export class PrototypeCardComponent {
     return `https://raw.githubusercontent.com/${environment.githubOwner}/${environment.githubRepo}/${environment.githubBranch}/${this.prototype.thumbnail}`;
   }
 
-  openFolder() {
-    const url = `https://github.com/${environment.githubOwner}/${environment.githubRepo}/tree/${environment.githubBranch}/${this.prototype.folder}`;
-    window.open(url, '_blank');
+  openDetail() {
+    this.router.navigate(['/prototype', this.prototype.id]);
   }
 
   copyLink() {
