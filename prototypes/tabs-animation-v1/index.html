@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SA Approvals — Ligentix Delivery</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #fff;
+      color: #323a45;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ─── HEADER ──────────────────────────────────────────
+       Exact from Figma: 64px tall, white bg, border-bottom
+       1.5px #eaecf0, right padding 32px, gap 16px
+    ─────────────────────────────────────────────────────── */
+    .header {
+      height: 64px;
+      background: #fff;
+      border-bottom: 1.5px solid #eaecf0;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding-right: 32px;
+      flex-shrink: 0;
+    }
+
+    /* Burger button: 64×64, right+bottom border, 8px padding */
+    .burger {
+      width: 64px;
+      height: 64px;
+      border-right: 1.5px solid #eaecf0;
+      border-bottom: 1.5px solid #eaecf0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      cursor: pointer;
+      background: #fff;
+      padding: 8px;
+      margin-bottom: -1.5px; /* aligns bottom border with header border */
+    }
+    .burger i {
+      font-size: 20px;
+      color: #14141f;
+    }
+
+    /* Brand: logo + delivery badge, gap 6px */
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      height: 100%;
+    }
+    .logo {
+      height: 32px;
+      width: auto;
+      display: block;
+    }
+
+    /* DELIVERY badge: orange pill, truck + label */
+    .badge {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      background: #fe7e6d;
+      border-radius: 100px;
+      padding: 0 6px;
+      height: 16px;
+    }
+    .badge__icon {
+      font-size: 10px;
+      color: #fef9f4;
+      line-height: 1;
+    }
+    .badge__label {
+      font-size: 11px;
+      font-weight: 500;
+      color: #fff8f8;
+      text-transform: uppercase;
+      letter-spacing: 0.1px;
+      line-height: 16px;
+    }
+
+    /* Right side: fills remaining space, avatar on far right */
+    .header-right {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+    }
+
+    /* Avatar: 40×40, dark navy, 4px radius, border 1.5px */
+    .avatar {
+      width: 40px;
+      height: 40px;
+      background: #043347;
+      border: 1.5px solid #043347;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .avatar i {
+      font-size: 14px;
+      color: #f9fafb;
+    }
+
+    /* ─── TAB SECTION ─────────────────────────────────────
+       8px spacer → 48px tab track → 12px spacer
+       Tab track: items-end, border-bottom 1.5px #eaecf0
+       Each tab: 32px tall, pb 12px, px 16px, items-center
+    ─────────────────────────────────────────────────────── */
+    .tab-section {
+      background: #fff;
+      flex-shrink: 0;
+    }
+
+    .tab-spacer-top { height: 8px; }
+    .tab-spacer-bottom { height: 12px; }
+
+    .tab-track {
+      position: relative;
+      height: 48px;
+      display: flex;
+      align-items: flex-end;
+      border-bottom: 1.5px solid #eaecf0;
+      padding-left: 32px;
+    }
+
+    .tab {
+      height: 32px;
+      display: flex;
+      align-items: center;
+      padding: 0 16px 12px;
+      font-size: 14px;
+      font-weight: 500;
+      line-height: 18px;
+      color: #323a45;
+      letter-spacing: -0.084px;
+      white-space: nowrap;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    /* Single sliding indicator — animated by JS */
+    .tab-indicator {
+      position: absolute;
+      bottom: -1.5px;
+      height: 3px;
+      background: #14141f;
+      pointer-events: none;
+    }
+
+    /* ─── PAGE CONTENT ─────────────────────────────────── */
+    .page-content {
+      flex: 1;
+      padding: 24px 32px;
+      color: #9ba5b4;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="header">
+    <button class="burger" aria-label="Open navigation">
+      <i class="fa-light fa-bars"></i>
+    </button>
+
+    <div class="brand">
+      <img src="ligentix-logo.svg" alt="Ligentix" class="logo" />
+      <div class="badge">
+        <i class="fa-light fa-truck badge__icon"></i>
+        <span class="badge__label">Delivery</span>
+      </div>
+    </div>
+
+    <div class="header-right">
+      <div class="avatar" role="button" aria-label="User account">
+        <i class="fa-regular fa-user"></i>
+      </div>
+    </div>
+  </header>
+
+  <!-- Tab section -->
+  <div class="tab-section">
+    <div class="tab-spacer-top"></div>
+    <nav class="tab-track" role="tablist">
+      <div class="tab is-active" role="tab" aria-selected="true">Booking rules</div>
+      <div class="tab" role="tab" aria-selected="false">Delivery routing</div>
+      <div class="tab" role="tab" aria-selected="false">Warehouse management</div>
+      <div class="tab" role="tab" aria-selected="false">Notification alerts</div>
+      <div class="tab-indicator" id="tabIndicator"></div>
+    </nav>
+    <div class="tab-spacer-bottom"></div>
+  </div>
+
+  <!-- Content placeholder -->
+  <div class="page-content">
+    Content area
+  </div>
+
+  <script>
+    const track     = document.querySelector('.tab-track');
+    const indicator = document.getElementById('tabIndicator');
+    const tabs      = document.querySelectorAll('.tab');
+
+    const PHASE     = 180; // ms per phase
+    const EASE_OUT  = 'cubic-bezier(0.4, 0, 0.2, 1)';
+    const EASE_IN   = 'cubic-bezier(0.0, 0, 0.6, 1)';
+
+    let phaseTimer = null;
+
+    function freeze() {
+      // Snap indicator to its current painted position mid-transition
+      const trackRect = track.getBoundingClientRect();
+      const indRect   = indicator.getBoundingClientRect();
+      indicator.style.transition = 'none';
+      indicator.style.left  = (indRect.left - trackRect.left) + 'px';
+      indicator.style.width = indRect.width + 'px';
+      indicator.offsetWidth; // force reflow
+    }
+
+    function moveTo(tab) {
+      if (phaseTimer) { clearTimeout(phaseTimer); freeze(); }
+
+      const fromLeft  = parseFloat(indicator.style.left);
+      const fromWidth = parseFloat(indicator.style.width);
+      const toLeft    = tab.offsetLeft;
+      const toWidth   = tab.offsetWidth;
+
+      if (toLeft === fromLeft && toWidth === fromWidth) return;
+
+      const goingRight = toLeft > fromLeft;
+
+      if (goingRight) {
+        // Phase 1: right edge leaps to target's right edge (indicator grows)
+        indicator.style.transition = `width ${PHASE}ms ${EASE_OUT}`;
+        indicator.style.width = (toLeft + toWidth - fromLeft) + 'px';
+
+        // Phase 2: left edge catches up (indicator contracts to target)
+        phaseTimer = setTimeout(() => {
+          indicator.style.transition =
+            `left ${PHASE}ms ${EASE_IN}, width ${PHASE}ms ${EASE_IN}`;
+          indicator.style.left  = toLeft + 'px';
+          indicator.style.width = toWidth + 'px';
+        }, PHASE);
+
+      } else {
+        // Phase 1: left edge leaps to target's left edge (indicator grows)
+        indicator.style.transition =
+          `left ${PHASE}ms ${EASE_OUT}, width ${PHASE}ms ${EASE_OUT}`;
+        indicator.style.left  = toLeft + 'px';
+        indicator.style.width = (fromLeft + fromWidth - toLeft) + 'px';
+
+        // Phase 2: right edge contracts to target
+        phaseTimer = setTimeout(() => {
+          indicator.style.transition = `width ${PHASE}ms ${EASE_IN}`;
+          indicator.style.width = toWidth + 'px';
+        }, PHASE);
+      }
+    }
+
+    // Place indicator on load with no animation
+    const active = document.querySelector('.tab.is-active');
+    indicator.style.left  = active.offsetLeft + 'px';
+    indicator.style.width = active.offsetWidth + 'px';
+
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        if (tab.classList.contains('is-active')) return;
+        tabs.forEach(t => {
+          t.classList.remove('is-active');
+          t.setAttribute('aria-selected', 'false');
+        });
+        tab.classList.add('is-active');
+        tab.setAttribute('aria-selected', 'true');
+        moveTo(tab);
+      });
+    });
+  </script>
+</body>
+</html>
