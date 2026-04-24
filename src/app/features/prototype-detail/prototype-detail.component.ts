@@ -176,7 +176,7 @@ export class PrototypeDetailComponent implements OnInit {
   }
 
   iframeUrl(p: Prototype): string {
-    return `https://raw.githubusercontent.com/${environment.githubOwner}/${environment.githubRepo}/${environment.githubBranch}/${p.folder}/index.html`;
+    return `${window.location.origin}/${p.folder}/index.html`;
   }
 
   copyShareLink() {
