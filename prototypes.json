@@ -1,5 +1,16 @@
 [
   {
+    "id": "tabs-animation-v1",
+    "title": "Tabs animation v1",
+    "description": "",
+    "creator": "Chuka",
+    "date": "2026-04-24",
+    "tags": [
+      "animation"
+    ],
+    "folder": "prototypes/tabs-animation-v1"
+  },
+  {
     "id": "button-hover-animations-mocwhbnk",
     "title": "Button hover animations",
     "tags": [
