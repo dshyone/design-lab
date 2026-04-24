@@ -1,8 +1,26 @@
 [
   {
+    "id": "button-hover-animations-mocwhbnk",
+    "title": "Button hover animations",
+    "tags": [
+      "animation",
+      "button",
+      "SwiftDS",
+      "CSS"
+    ],
+    "creator": "Chuka",
+    "date": "2026-04-24",
+    "description": "Four hover animation variants for buttons: spring scale, lift with shadow, fill sweep, and pulse ring. Pure CSS, no libraries.",
+    "folder": "prototypes/button-spring-hover"
+  },
+  {
     "id": "button-hover-spring",
     "title": "Button hover — spring animation",
-    "tags": ["animation", "SwiftDS", "button"],
+    "tags": [
+      "animation",
+      "SwiftDS",
+      "button"
+    ],
     "creator": "Craig",
     "date": "2026-04-20",
     "description": "Elastic spring scale on hover for the primary CTA button. Explores ease curves for a snappy but not bouncy feel.",
@@ -11,7 +29,11 @@
   {
     "id": "booking-table-v2",
     "title": "Booking table — dense layout",
-    "tags": ["table", "booking", "SIP"],
+    "tags": [
+      "table",
+      "booking",
+      "SIP"
+    ],
     "creator": "Chuka",
     "date": "2026-04-18",
     "description": "Tighter row height and sticky header for the booking management table. Angular-ready markup.",
@@ -20,7 +42,11 @@
   {
     "id": "nav-sidebar-collapse",
     "title": "Sidebar nav — collapsible",
-    "tags": ["navigation", "SwiftDS", "animation"],
+    "tags": [
+      "navigation",
+      "SwiftDS",
+      "animation"
+    ],
     "creator": "Craig",
     "date": "2026-04-15",
     "description": "Collapsible sidebar with icon-only collapsed state. Smooth width transition using CSS grid.",

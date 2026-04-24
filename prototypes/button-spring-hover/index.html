@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Button — Spring hover animation</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: #f7f7f8;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 48px;
+      padding: 40px 24px;
+    }
+
+    h1 {
+      font-size: 13px;
+      font-weight: 500;
+      color: #9b9ba4;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+
+    .stage {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 40px;
+    }
+
+    .row {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .label {
+      font-size: 11px;
+      font-weight: 500;
+      color: #9b9ba4;
+      text-align: center;
+      margin-top: 10px;
+      letter-spacing: .04em;
+    }
+
+    .btn-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* Base button */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      height: 40px;
+      padding: 0 20px;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 500;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      outline: none;
+      position: relative;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* --- Variant 1: Spring scale --- */
+    .btn-spring {
+      background: #0066ff;
+      color: #fff;
+      transition: background 150ms ease;
+      transform-origin: center bottom;
+    }
+    .btn-spring:hover {
+      background: #0052cc;
+      animation: spring-pop 400ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+    .btn-spring:active {
+      animation: none;
+      transform: scale(0.95);
+    }
+    @keyframes spring-pop {
+      0%   { transform: scale(1); }
+      40%  { transform: scale(1.08); }
+      70%  { transform: scale(0.97); }
+      85%  { transform: scale(1.03); }
+      100% { transform: scale(1.0); }
+    }
+
+    /* --- Variant 2: Lift + shadow --- */
+    .btn-lift {
+      background: #fff;
+      color: #111113;
+      box-shadow: 0 1px 2px rgba(0,0,0,.08), 0 1px 4px rgba(0,0,0,.06);
+      transition: transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1),
+                  box-shadow 200ms ease;
+    }
+    .btn-lift:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 4px 8px rgba(0,0,0,.10), 0 8px 24px rgba(0,0,0,.08);
+    }
+    .btn-lift:active {
+      transform: translateY(0);
+      box-shadow: 0 1px 2px rgba(0,0,0,.08);
+    }
+
+    /* --- Variant 3: Fill sweep --- */
+    .btn-sweep {
+      background: transparent;
+      color: #0066ff;
+      border: 1.5px solid #0066ff;
+      overflow: hidden;
+    }
+    .btn-sweep::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: #0066ff;
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 250ms cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 0;
+    }
+    .btn-sweep:hover::before { transform: scaleX(1); }
+    .btn-sweep:hover { color: #fff; }
+    .btn-sweep span { position: relative; z-index: 1; transition: color 250ms ease; }
+
+    /* --- Variant 4: Pulse ring --- */
+    .btn-pulse {
+      background: #0066ff;
+      color: #fff;
+    }
+    .btn-pulse::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 8px;
+      border: 2px solid #0066ff;
+      opacity: 0;
+    }
+    .btn-pulse:hover::after {
+      animation: pulse-ring 600ms cubic-bezier(0.2, 0, 0.8, 1) forwards;
+    }
+    @keyframes pulse-ring {
+      0%   { inset: 0; opacity: .7; }
+      100% { inset: -8px; opacity: 0; }
+    }
+
+    /* Divider */
+    .divider {
+      width: 100%;
+      max-width: 480px;
+      height: 1px;
+      background: #e4e4e7;
+    }
+
+    /* Interaction note */
+    .note {
+      font-size: 12px;
+      color: #9b9ba4;
+      text-align: center;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <h1>Button — Spring hover animations</h1>
+
+  <div class="stage">
+    <div class="row">
+      <div class="btn-wrap">
+        <button class="btn btn-spring">Primary action</button>
+        <p class="label">Spring scale</p>
+      </div>
+
+      <div class="btn-wrap">
+        <button class="btn btn-lift">Secondary action</button>
+        <p class="label">Lift + shadow</p>
+      </div>
+
+      <div class="btn-wrap">
+        <button class="btn btn-sweep"><span>Outline action</span></button>
+        <p class="label">Fill sweep</p>
+      </div>
+
+      <div class="btn-wrap">
+        <button class="btn btn-pulse">Confirm</button>
+        <p class="label">Pulse ring</p>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <p class="note">Hover each button to preview the animation.<br>All transitions use <code>cubic-bezier</code> easing — no libraries.</p>
+  </div>
+</body>
+</html>
