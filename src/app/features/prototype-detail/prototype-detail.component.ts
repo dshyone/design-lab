@@ -54,7 +54,7 @@ import { environment } from '../../../environments/environment';
                 sandbox="allow-scripts allow-same-origin"
                 title="Prototype preview"
                 (load)="onIframeLoad(previewFrame)"
-                (error)="iframeError = true; cdr.markForCheck()"
+                (error)="onIframeError()"
               ></iframe>
               <div *ngIf="iframeError" class="no-preview">
                 <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
@@ -184,6 +184,11 @@ export class PrototypeDetailComponent implements OnInit {
   iframeUrl(p: Prototype): SafeResourceUrl {
     const url = `${window.location.origin}/${p.folder}/index.html`;
     return this.sanitizer.bypassSecurityTrustResourceUrl(url);
+  }
+
+  onIframeError() {
+    this.iframeError = true;
+    this.cdr.markForCheck();
   }
 
   onIframeLoad(iframe: HTMLIFrameElement) {
