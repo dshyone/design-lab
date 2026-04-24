@@ -127,12 +127,12 @@ export class DashboardComponent implements OnInit {
   openEdit(p: Prototype) { this.editingPrototype = p; this.showModal = true; }
   closeModal() { this.showModal = false; this.editingPrototype = null; }
 
-  async onSaved({ prototype, pat }: { prototype: Prototype; pat: string }) {
+  async onSaved({ prototype, pat, fileContent }: { prototype: Prototype; pat: string; fileContent?: string }) {
     try {
       if (this.editingPrototype) {
         await this.svc.updatePrototype(prototype, pat);
       } else {
-        await this.svc.addPrototype(prototype, pat);
+        await this.svc.addPrototype(prototype, pat, fileContent);
       }
       this.closeModal();
     } catch (err: unknown) {

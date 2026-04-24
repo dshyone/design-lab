@@ -1,13 +1,4 @@
-import {
-  Component,
-  Input,
-  Output,
-  EventEmitter,
-  OnInit,
-  ChangeDetectionStrategy,
-  signal,
-  computed,
-} from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Prototype, CREATORS } from '../../core/models/prototype.model';
@@ -32,16 +23,60 @@ const PAT_KEY = 'dl_github_pat';
         </div>
 
         <div class="modal-body">
-          <!-- PAT prompt (first time only) -->
           <div class="field" *ngIf="showPatPrompt">
             <label class="label">GitHub Personal Access Token</label>
-            <p class="hint">Required to save changes to GitHub. Stored only in this browser session — never sent elsewhere.</p>
+            <p class="hint">Required to save to GitHub. Stored only in this browser session.</p>
             <input class="input" type="password" placeholder="ghp_…" [(ngModel)]="pat" />
+          </div>
+
+          <!-- File upload (new prototypes only) -->
+          <div class="field" *ngIf="!editMode">
+            <label class="label">
+              Exploration file
+              <span class="optional">(HTML)</span>
+            </label>
+            <div
+              class="drop-zone"
+              [class.has-file]="selectedFileName"
+              (dragover)="$event.preventDefault()"
+              (drop)="onDrop($event)"
+              (click)="fileInput.click()"
+            >
+              <input
+                #fileInput
+                type="file"
+                accept=".html"
+                style="display:none"
+                (change)="onFileSelected($event)"
+              />
+              <ng-container *ngIf="!selectedFileName">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                  <polyline points="17 8 12 3 7 8"/>
+                  <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+                <p class="drop-label">Drop an HTML file here or <span class="drop-link">browse</span></p>
+              </ng-container>
+              <ng-container *ngIf="selectedFileName">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                </svg>
+                <p class="drop-filename">{{ selectedFileName }}</p>
+                <button class="drop-clear" (click)="clearFile($event)">Remove</button>
+              </ng-container>
+            </div>
           </div>
 
           <div class="field">
             <label class="label">Title <span class="required">*</span></label>
-            <input class="input" type="text" placeholder="e.g. Button hover animation" [(ngModel)]="form.title" />
+            <input
+              class="input"
+              type="text"
+              placeholder="e.g. Button hover animation"
+              [(ngModel)]="form.title"
+              (ngModelChange)="onTitleChange($event)"
+            />
           </div>
 
           <div class="field">
@@ -59,6 +94,7 @@ const PAT_KEY = 'dl_github_pat';
             <div class="field">
               <label class="label">Folder path <span class="required">*</span></label>
               <input class="input" type="text" placeholder="prototypes/my-exploration" [(ngModel)]="form.folder" />
+              <p class="hint" *ngIf="!editMode">Auto-filled from title. Edit if needed.</p>
             </div>
           </div>
 
@@ -84,12 +120,7 @@ const PAT_KEY = 'dl_github_pat';
                 </datalist>
               </div>
             </div>
-            <p class="hint">Press Enter or comma to add. Existing tags shown as suggestions.</p>
-          </div>
-
-          <div class="field">
-            <label class="label">Thumbnail path <span class="optional">(optional)</span></label>
-            <input class="input" type="text" placeholder="prototypes/my-exploration/thumb.png" [(ngModel)]="form.thumbnail" />
+            <p class="hint">Press Enter or comma to add.</p>
           </div>
 
           <p *ngIf="errorMsg" class="error-msg">{{ errorMsg }}</p>
@@ -98,138 +129,137 @@ const PAT_KEY = 'dl_github_pat';
         <div class="modal-footer">
           <button class="btn-secondary" (click)="cancel.emit()" [disabled]="saving">Cancel</button>
           <button class="btn-primary" (click)="submit()" [disabled]="!isValid() || saving">
-            {{ saving ? 'Saving…' : (editMode ? 'Save changes' : 'Add prototype') }}
+            <svg *ngIf="saving" class="spin-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+            </svg>
+            {{ savingLabel }}
           </button>
         </div>
       </div>
     </div>
   `,
   styles: [`
-    .overlay {
-      position: fixed; inset: 0;
-      background: rgba(0,0,0,.45);
-      display: flex; align-items: center; justify-content: center;
-      z-index: 100;
-      padding: var(--space-4);
-    }
-    .modal {
-      background: var(--color-surface);
-      border-radius: var(--radius-lg);
-      box-shadow: var(--shadow-modal);
-      width: 100%; max-width: 560px;
-      max-height: 90vh;
-      overflow-y: auto;
-      display: flex; flex-direction: column;
-    }
-    .modal-header {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: var(--space-5) var(--space-6);
-      border-bottom: 1px solid var(--color-border);
-      position: sticky; top: 0; background: var(--color-surface);
-      z-index: 1;
-    }
-    .modal-title {
-      font-size: var(--text-lg); font-weight: var(--weight-semibold);
-      color: var(--color-text-primary); margin: 0;
-    }
-    .close-btn {
-      background: none; border: none; cursor: pointer; padding: var(--space-1);
-      color: var(--color-text-tertiary); border-radius: var(--radius-sm);
-      display: flex; align-items: center;
-      transition: color var(--transition-fast), background var(--transition-fast);
-    }
+    .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: flex; align-items: center; justify-content: center; z-index: 100; padding: var(--space-4); }
+    .modal { background: var(--color-surface); border-radius: var(--radius-lg); box-shadow: var(--shadow-modal); width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto; display: flex; flex-direction: column; }
+    .modal-header { display: flex; align-items: center; justify-content: space-between; padding: var(--space-5) var(--space-6); border-bottom: 1px solid var(--color-border); position: sticky; top: 0; background: var(--color-surface); z-index: 1; }
+    .modal-title { font-size: var(--text-lg); font-weight: var(--weight-semibold); color: var(--color-text-primary); margin: 0; }
+    .close-btn { background: none; border: none; cursor: pointer; padding: var(--space-1); color: var(--color-text-tertiary); border-radius: var(--radius-sm); display: flex; align-items: center; transition: color var(--transition-fast), background var(--transition-fast); }
     .close-btn:hover { color: var(--color-text-primary); background: var(--color-surface-hover); }
     .modal-body { padding: var(--space-5) var(--space-6); display: flex; flex-direction: column; gap: var(--space-5); }
-    .modal-footer {
-      padding: var(--space-4) var(--space-6);
-      border-top: 1px solid var(--color-border);
-      display: flex; justify-content: flex-end; gap: var(--space-3);
-      position: sticky; bottom: 0; background: var(--color-surface);
-    }
+    .modal-footer { padding: var(--space-4) var(--space-6); border-top: 1px solid var(--color-border); display: flex; justify-content: flex-end; gap: var(--space-3); position: sticky; bottom: 0; background: var(--color-surface); }
     .field { display: flex; flex-direction: column; gap: var(--space-1); }
     .row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); }
     .label { font-size: var(--text-sm); font-weight: var(--weight-medium); color: var(--color-text-primary); }
     .required { color: var(--color-danger); }
-    .optional { font-size: var(--text-xs); color: var(--color-text-tertiary); font-weight: var(--weight-regular); }
+    .optional { font-size: var(--text-xs); color: var(--color-text-tertiary); font-weight: 400; }
     .hint { font-size: var(--text-xs); color: var(--color-text-tertiary); margin: 0; }
-    .input {
-      font-size: var(--text-sm); font-family: var(--font-sans);
-      color: var(--color-text-primary);
-      border: 1px solid var(--color-border); border-radius: var(--radius-sm);
-      padding: 8px 12px; outline: none; background: var(--color-surface);
-      transition: border-color var(--transition-fast);
-      width: 100%; box-sizing: border-box;
-    }
+    .input { font-size: var(--text-sm); font-family: var(--font-sans); color: var(--color-text-primary); border: 1px solid var(--color-border); border-radius: var(--radius-sm); padding: 8px 12px; outline: none; background: var(--color-surface); transition: border-color var(--transition-fast); width: 100%; box-sizing: border-box; }
     .input:focus { border-color: var(--color-accent); }
     .textarea { resize: vertical; min-height: 64px; }
     .select { cursor: pointer; }
-    .tag-input-wrap {
-      border: 1px solid var(--color-border); border-radius: var(--radius-sm);
-      padding: 6px 8px; background: var(--color-surface);
-      transition: border-color var(--transition-fast);
+
+    /* Drop zone */
+    .drop-zone {
+      border: 1.5px dashed var(--color-border);
+      border-radius: var(--radius-md);
+      padding: var(--space-6);
+      display: flex; flex-direction: column; align-items: center; gap: var(--space-2);
+      cursor: pointer; transition: border-color var(--transition-fast), background var(--transition-fast);
+      text-align: center; color: var(--color-text-tertiary);
     }
+    .drop-zone:hover { border-color: var(--color-accent); background: var(--color-accent-subtle); }
+    .drop-zone.has-file { border-style: solid; border-color: var(--color-accent); background: var(--color-accent-subtle); color: var(--color-text-primary); }
+    .drop-label { font-size: var(--text-sm); margin: 0; }
+    .drop-link { color: var(--color-accent); text-decoration: underline; }
+    .drop-filename { font-size: var(--text-sm); font-weight: var(--weight-medium); margin: 0; color: var(--color-accent); }
+    .drop-clear { font-size: var(--text-xs); color: var(--color-text-tertiary); background: none; border: none; cursor: pointer; text-decoration: underline; font-family: var(--font-sans); padding: 0; }
+
+    /* Tags */
+    .tag-input-wrap { border: 1px solid var(--color-border); border-radius: var(--radius-sm); padding: 6px 8px; background: var(--color-surface); transition: border-color var(--transition-fast); }
     .tag-input-wrap:focus-within { border-color: var(--color-accent); }
     .tag-chips { display: flex; flex-wrap: wrap; gap: var(--space-1); align-items: center; }
-    .chip {
-      display: flex; align-items: center; gap: 4px;
-      font-size: var(--text-xs); font-weight: var(--weight-medium);
-      color: var(--color-tag-text); background: var(--color-tag-bg);
-      border-radius: var(--radius-full); padding: 3px 8px;
-    }
-    .chip-remove {
-      background: none; border: none; cursor: pointer;
-      color: var(--color-tag-text); padding: 0; font-size: 14px; line-height: 1;
-    }
-    .tag-input {
-      border: none; outline: none; font-size: var(--text-sm);
-      font-family: var(--font-sans); background: none; min-width: 120px; flex: 1;
-    }
-    .btn-primary {
-      font-size: var(--text-sm); font-weight: var(--weight-medium); font-family: var(--font-sans);
-      color: #fff; background: var(--color-accent); border: none;
-      border-radius: var(--radius-sm); padding: 8px 20px; cursor: pointer;
-      transition: background var(--transition-fast);
-    }
+    .chip { display: flex; align-items: center; gap: 4px; font-size: var(--text-xs); font-weight: var(--weight-medium); color: var(--color-tag-text); background: var(--color-tag-bg); border-radius: var(--radius-full); padding: 3px 8px; }
+    .chip-remove { background: none; border: none; cursor: pointer; color: var(--color-tag-text); padding: 0; font-size: 14px; line-height: 1; }
+    .tag-input { border: none; outline: none; font-size: var(--text-sm); font-family: var(--font-sans); background: none; min-width: 120px; flex: 1; }
+
+    /* Buttons */
+    .btn-primary { display: flex; align-items: center; gap: var(--space-2); font-size: var(--text-sm); font-weight: var(--weight-medium); font-family: var(--font-sans); color: #fff; background: var(--color-accent); border: none; border-radius: var(--radius-sm); padding: 8px 20px; cursor: pointer; transition: background var(--transition-fast); }
     .btn-primary:hover:not(:disabled) { background: var(--color-accent-hover); }
     .btn-primary:disabled { opacity: .5; cursor: not-allowed; }
-    .btn-secondary {
-      font-size: var(--text-sm); font-weight: var(--weight-medium); font-family: var(--font-sans);
-      color: var(--color-text-secondary); background: var(--color-surface);
-      border: 1px solid var(--color-border); border-radius: var(--radius-sm);
-      padding: 8px 20px; cursor: pointer;
-      transition: background var(--transition-fast);
-    }
+    .btn-secondary { font-size: var(--text-sm); font-weight: var(--weight-medium); font-family: var(--font-sans); color: var(--color-text-secondary); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-sm); padding: 8px 20px; cursor: pointer; transition: background var(--transition-fast); }
     .btn-secondary:hover:not(:disabled) { background: var(--color-surface-hover); }
     .btn-secondary:disabled { opacity: .5; cursor: not-allowed; }
     .error-msg { color: var(--color-danger); font-size: var(--text-sm); margin: 0; }
+    .spin-icon { animation: spin .7s linear infinite; flex-shrink: 0; }
+    @keyframes spin { to { transform: rotate(360deg); } }
   `]
 })
 export class AddPrototypeModalComponent implements OnInit {
   @Input() existingTags: string[] = [];
   @Input() editing: Prototype | null = null;
-  @Output() saved = new EventEmitter<{ prototype: Prototype; pat: string }>();
+  @Output() saved = new EventEmitter<{ prototype: Prototype; pat: string; fileContent?: string }>();
   @Output() cancel = new EventEmitter<void>();
 
   creators = CREATORS;
   form: Partial<Prototype> & { tags: string[] } = {
-    title: '', description: '', creator: 'Craig', folder: '', thumbnail: '', tags: []
+    title: '', description: '', creator: 'Craig', folder: '', tags: []
   };
   tagInput = '';
   pat = '';
   showPatPrompt = false;
   saving = false;
   errorMsg = '';
+  selectedFileName = '';
+  fileContent: string | undefined;
 
   get editMode() { return !!this.editing; }
 
-  ngOnInit() {
-    const storedPat = sessionStorage.getItem(PAT_KEY);
-    this.showPatPrompt = !storedPat;
-    if (storedPat) this.pat = storedPat;
+  get savingLabel(): string {
+    if (!this.saving) return this.editMode ? 'Save changes' : 'Add prototype';
+    return this.fileContent ? 'Uploading…' : 'Saving…';
+  }
 
-    if (this.editing) {
-      this.form = { ...this.editing, tags: [...this.editing.tags] };
+  ngOnInit() {
+    const stored = sessionStorage.getItem(PAT_KEY);
+    this.showPatPrompt = !stored;
+    if (stored) this.pat = stored;
+    if (this.editing) this.form = { ...this.editing, tags: [...this.editing.tags] };
+  }
+
+  onTitleChange(title: string) {
+    if (!this.editMode && !this._folderManuallyEdited) {
+      this.form.folder = 'prototypes/' + this.slugify(title);
     }
+  }
+
+  private _folderManuallyEdited = false;
+
+  onFileSelected(event: Event) {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    this.readFile(file);
+  }
+
+  onDrop(event: DragEvent) {
+    event.preventDefault();
+    const file = event.dataTransfer?.files[0];
+    if (file && file.name.endsWith('.html')) this.readFile(file);
+  }
+
+  private readFile(file: File) {
+    this.selectedFileName = file.name;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const result = e.target?.result as string;
+      this.fileContent = result.split(',')[1];
+    };
+    reader.readAsDataURL(file);
+  }
+
+  clearFile(e: Event) {
+    e.stopPropagation();
+    this.selectedFileName = '';
+    this.fileContent = undefined;
   }
 
   addTag() {
@@ -249,7 +279,6 @@ export class AddPrototypeModalComponent implements OnInit {
   async submit() {
     if (!this.isValid()) return;
     if (this.tagInput.trim()) this.addTag();
-
     sessionStorage.setItem(PAT_KEY, this.pat);
     this.showPatPrompt = false;
     this.saving = true;
@@ -263,23 +292,16 @@ export class AddPrototypeModalComponent implements OnInit {
       date: this.editing?.date ?? new Date().toISOString().slice(0, 10),
       tags: this.form.tags,
       folder: this.form.folder!.trim(),
-      thumbnail: this.form.thumbnail?.trim() || undefined,
     };
 
-    this.saved.emit({ prototype, pat: this.pat });
+    this.saved.emit({ prototype, pat: this.pat, fileContent: this.fileContent });
   }
 
-  onSaveError(msg: string) {
-    this.saving = false;
-    this.errorMsg = msg;
-  }
-
-  onSaveSuccess() {
-    this.saving = false;
-  }
+  onSaveError(msg: string) { this.saving = false; this.errorMsg = msg; }
+  onSaveSuccess() { this.saving = false; }
 
   private slugify(s: string): string {
-    return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') + '-' + Date.now().toString(36);
+    return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
   }
 
   onOverlayClick(e: MouseEvent) {

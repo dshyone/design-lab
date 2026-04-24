@@ -1,4 +1,5 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
 import { GithubService } from './github.service';
 import { Prototype } from '../models/prototype.model';
 
@@ -76,17 +77,15 @@ export class PrototypeService {
     this._activeTags.set(new Set());
   }
 
-  addPrototype(prototype: Prototype, pat: string) {
+  async addPrototype(prototype: Prototype, pat: string, fileContent?: string) {
+    if (fileContent) {
+      await firstValueFrom(
+        this.github.uploadFile(`${prototype.folder}/index.html`, fileContent, pat)
+      );
+    }
     const updated = [prototype, ...this._prototypes()];
-    return new Promise<void>((resolve, reject) => {
-      this.github.savePrototypes(updated, this._sha(), pat).subscribe({
-        next: () => {
-          this._prototypes.set(updated);
-          resolve();
-        },
-        error: reject,
-      });
-    });
+    await firstValueFrom(this.github.savePrototypes(updated, this._sha(), pat));
+    this._prototypes.set(updated);
   }
 
   updatePrototype(updated: Prototype, pat: string) {

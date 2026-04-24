@@ -57,4 +57,13 @@ export class GithubService {
       { headers }
     );
   }
+
+  uploadFile(path: string, base64Content: string, pat: string): Observable<unknown> {
+    const headers = new HttpHeaders({ Authorization: `token ${pat}` });
+    return this.http.put(
+      `${this.base}/${path}`,
+      { message: `Upload ${path} via Design Lab`, content: base64Content, branch: environment.githubBranch },
+      { headers }
+    );
+  }
 }
