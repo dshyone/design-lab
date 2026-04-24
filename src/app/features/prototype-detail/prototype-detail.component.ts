@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { PrototypeService } from '../../core/services/prototype.service';
 import { Prototype } from '../../core/models/prototype.model';
 import { environment } from '../../../environments/environment';
@@ -146,6 +147,7 @@ import { environment } from '../../../environments/environment';
 export class PrototypeDetailComponent implements OnInit {
   svc = inject(PrototypeService);
   private route = inject(ActivatedRoute);
+  private sanitizer = inject(DomSanitizer);
 
   proto = signal<Prototype | null>(null);
   copied = false;
@@ -175,8 +177,9 @@ export class PrototypeDetailComponent implements OnInit {
     return `https://github.com/${environment.githubOwner}/${environment.githubRepo}/tree/${environment.githubBranch}/${p.folder}`;
   }
 
-  iframeUrl(p: Prototype): string {
-    return `${window.location.origin}/${p.folder}/index.html`;
+  iframeUrl(p: Prototype): SafeResourceUrl {
+    const url = `${window.location.origin}/${p.folder}/index.html`;
+    return this.sanitizer.bypassSecurityTrustResourceUrl(url);
   }
 
   copyShareLink() {
