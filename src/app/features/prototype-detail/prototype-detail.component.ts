@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
@@ -49,19 +49,20 @@ import { environment } from '../../../environments/environment';
             <div class="iframe-wrap">
               <iframe
                 *ngIf="!iframeError"
+                #previewFrame
                 [src]="iframeUrl(p)"
                 sandbox="allow-scripts allow-same-origin"
                 title="Prototype preview"
-                (error)="iframeError = true"
+                (load)="onIframeLoad(previewFrame)"
+                (error)="iframeError = true; cdr.markForCheck()"
               ></iframe>
               <div *ngIf="iframeError" class="no-preview">
                 <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
                   <rect x="3" y="3" width="18" height="18" rx="2"/>
-                  <circle cx="8.5" cy="8.5" r="1.5"/>
-                  <path d="M21 15l-5-5L5 21"/>
+                  <path d="M12 8v4M12 16h.01"/>
                 </svg>
-                <p>No preview available</p>
-                <a [href]="githubFolderUrl(p)" target="_blank" class="link">View files on GitHub</a>
+                <p>No explorations added yet</p>
+                <p class="no-preview-hint">Add an <code>index.html</code> to <code>{{ p.folder }}</code> and push to GitHub.</p>
               </div>
             </div>
           </div>
@@ -119,6 +120,8 @@ import { environment } from '../../../environments/environment';
     iframe { width: 100%; height: 100%; border: none; display: block; }
     .no-preview { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-3); height: 100%; color: var(--color-text-tertiary); padding: var(--space-12); }
     .no-preview p { font-size: var(--text-sm); margin: 0; }
+    .no-preview-hint { font-size: var(--text-xs) !important; color: var(--color-text-tertiary) !important; margin-top: var(--space-1) !important; text-align: center; }
+    .no-preview-hint code { font-family: var(--font-mono); background: var(--color-surface-hover); border-radius: 3px; padding: 1px 4px; }
     .meta-pane { display: flex; flex-direction: column; gap: var(--space-5); position: sticky; top: calc(56px + var(--space-6)); }
     .title { font-size: var(--text-2xl); font-weight: var(--weight-semibold); color: var(--color-text-primary); line-height: 1.25; }
     .description { font-size: var(--text-base); color: var(--color-text-secondary); line-height: 1.6; margin: var(--space-2) 0 0; }
@@ -148,6 +151,7 @@ export class PrototypeDetailComponent implements OnInit {
   svc = inject(PrototypeService);
   private route = inject(ActivatedRoute);
   private sanitizer = inject(DomSanitizer);
+  private cdr = inject(ChangeDetectorRef);
 
   proto = signal<Prototype | null>(null);
   copied = false;
@@ -180,6 +184,18 @@ export class PrototypeDetailComponent implements OnInit {
   iframeUrl(p: Prototype): SafeResourceUrl {
     const url = `${window.location.origin}/${p.folder}/index.html`;
     return this.sanitizer.bypassSecurityTrustResourceUrl(url);
+  }
+
+  onIframeLoad(iframe: HTMLIFrameElement) {
+    try {
+      const isShell = !!iframe.contentDocument?.querySelector('meta[name="dl-shell"]');
+      if (isShell) {
+        this.iframeError = true;
+        this.cdr.markForCheck();
+      }
+    } catch {
+      // cross-origin guard — shouldn't happen for same-origin but safe to swallow
+    }
   }
 
   copyShareLink() {
