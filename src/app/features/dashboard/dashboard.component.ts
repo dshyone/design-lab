@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PrototypeService } from '../../core/services/prototype.service';
 import { UiStateService } from '../../core/services/ui-state.service';
@@ -65,9 +65,9 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
     <!-- Modal -->
     <dl-add-prototype-modal
-      *ngIf="showModal"
+      *ngIf="showModal()"
       [existingTags]="svc.allTags()"
-      [editing]="editingPrototype"
+      [editing]="editingPrototype()"
       (saved)="onSaved($event)"
       (cancel)="closeModal()"
       #addModal
@@ -114,8 +114,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 export class DashboardComponent implements OnInit {
   svc = inject(PrototypeService);
   private ui = inject(UiStateService);
-  showModal = false;
-  editingPrototype: Prototype | null = null;
+  showModal = signal(false);
+  editingPrototype = signal<Prototype | null>(null);
 
   constructor() {
     this.ui.triggerAdd$.pipe(takeUntilDestroyed()).subscribe(() => this.openAdd());
@@ -123,13 +123,13 @@ export class DashboardComponent implements OnInit {
 
   ngOnInit() { this.svc.load(); }
 
-  openAdd() { this.editingPrototype = null; this.showModal = true; }
-  openEdit(p: Prototype) { this.editingPrototype = p; this.showModal = true; }
-  closeModal() { this.showModal = false; this.editingPrototype = null; }
+  openAdd() { this.editingPrototype.set(null); this.showModal.set(true); }
+  openEdit(p: Prototype) { this.editingPrototype.set(p); this.showModal.set(true); }
+  closeModal() { this.showModal.set(false); this.editingPrototype.set(null); }
 
   async onSaved({ prototype, pat, fileContent }: { prototype: Prototype; pat: string; fileContent?: string }) {
     try {
-      if (this.editingPrototype) {
+      if (this.editingPrototype()) {
         await this.svc.updatePrototype(prototype, pat);
       } else {
         await this.svc.addPrototype(prototype, pat, fileContent);

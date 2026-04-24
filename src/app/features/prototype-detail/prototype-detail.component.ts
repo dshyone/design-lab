@@ -156,6 +156,7 @@ export class PrototypeDetailComponent implements OnInit {
   proto = signal<Prototype | null>(null);
   copied = false;
   iframeError = false;
+  private _urlCache = new Map<string, SafeResourceUrl>();
 
   ngOnInit() {
     const id = this.route.snapshot.paramMap.get('id')!;
@@ -182,8 +183,11 @@ export class PrototypeDetailComponent implements OnInit {
   }
 
   iframeUrl(p: Prototype): SafeResourceUrl {
-    const url = `${window.location.origin}/${p.folder}/index.html`;
-    return this.sanitizer.bypassSecurityTrustResourceUrl(url);
+    if (!this._urlCache.has(p.folder)) {
+      const url = `${window.location.origin}/${p.folder}/index.html`;
+      this._urlCache.set(p.folder, this.sanitizer.bypassSecurityTrustResourceUrl(url));
+    }
+    return this._urlCache.get(p.folder)!;
   }
 
   onIframeError() {
