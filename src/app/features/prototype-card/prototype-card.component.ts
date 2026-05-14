@@ -1,8 +1,11 @@
-import { Component, Input, Output, EventEmitter, ChangeDetectionStrategy, inject } from '@angular/core';
+import {
+  Component, Input, Output, EventEmitter, ChangeDetectionStrategy, inject,
+  signal, ElementRef, ViewChild, AfterViewInit, OnDestroy, ChangeDetectorRef
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { Prototype } from '../../core/models/prototype.model';
-import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'dl-prototype-card',
@@ -11,22 +14,28 @@ import { environment } from '../../../environments/environment';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <article class="card" (click)="openDetail()">
-      <div class="thumbnail">
-        <img
-          *ngIf="prototype.thumbnail; else placeholder"
-          [src]="thumbnailUrl"
-          [alt]="prototype.title"
-          (error)="imgError = true"
-        />
-        <ng-template #placeholder>
-          <div class="placeholder-icon">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <rect x="3" y="3" width="18" height="18" rx="2"/>
-              <circle cx="8.5" cy="8.5" r="1.5"/>
-              <path d="M21 15l-5-5L5 21"/>
-            </svg>
+      <div class="thumbnail" #thumbnail>
+        <ng-container *ngIf="!showPlaceholder()">
+          <div class="iframe-scale" [style.transform]="'scale(' + scale() + ')'">
+            <iframe
+              #previewFrame
+              [src]="safeUrl"
+              sandbox="allow-scripts allow-same-origin"
+              scrolling="no"
+              tabindex="-1"
+              title="Preview"
+              (load)="onIframeLoad(previewFrame)"
+              (error)="showPlaceholder.set(true)"
+            ></iframe>
           </div>
-        </ng-template>
+        </ng-container>
+        <div *ngIf="showPlaceholder()" class="placeholder-icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <rect x="3" y="3" width="18" height="18" rx="2"/>
+            <circle cx="8.5" cy="8.5" r="1.5"/>
+            <path d="M21 15l-5-5L5 21"/>
+          </svg>
+        </div>
       </div>
 
       <div class="body">
@@ -71,19 +80,27 @@ import { environment } from '../../../environments/environment';
       overflow: hidden;
       transition: box-shadow var(--transition-base), transform var(--transition-base);
     }
-    .card:hover {
-      box-shadow: var(--shadow-card-hover);
-      transform: translateY(-2px);
-    }
+    .card:hover { box-shadow: var(--shadow-card-hover); transform: translateY(-2px); }
     .thumbnail {
+      position: relative;
       aspect-ratio: 16/9;
       background: var(--color-surface-subtle);
       overflow: hidden;
     }
-    .thumbnail img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
+    .iframe-scale {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 1280px;
+      height: 720px;
+      transform-origin: top left;
+      pointer-events: none;
+    }
+    iframe {
+      width: 1280px;
+      height: 720px;
+      border: none;
+      display: block;
     }
     .placeholder-icon {
       display: flex;
@@ -106,10 +123,7 @@ import { environment } from '../../../environments/environment';
       font-size: var(--text-xs);
       color: var(--color-text-tertiary);
     }
-    .meta .creator {
-      font-weight: var(--weight-medium);
-      color: var(--color-text-secondary);
-    }
+    .meta .creator { font-weight: var(--weight-medium); color: var(--color-text-secondary); }
     .meta .date::before { content: '·'; margin-right: var(--space-2); }
     .title {
       font-size: var(--text-base);
@@ -165,23 +179,51 @@ import { environment } from '../../../environments/environment';
       transition: background var(--transition-fast), color var(--transition-fast);
       font-family: var(--font-sans);
     }
-    .action-btn:hover {
-      background: var(--color-surface-hover);
-      color: var(--color-text-primary);
-    }
+    .action-btn:hover { background: var(--color-surface-hover); color: var(--color-text-primary); }
   `]
 })
-export class PrototypeCardComponent {
+export class PrototypeCardComponent implements AfterViewInit, OnDestroy {
   @Input({ required: true }) prototype!: Prototype;
   @Output() edit = new EventEmitter<Prototype>();
+  @ViewChild('thumbnail') thumbnailEl!: ElementRef<HTMLDivElement>;
 
   private router = inject(Router);
-  copied = false;
-  imgError = false;
+  private sanitizer = inject(DomSanitizer);
+  private cdr = inject(ChangeDetectorRef);
 
-  get thumbnailUrl(): string {
-    if (this.imgError || !this.prototype.thumbnail) return '';
-    return `https://raw.githubusercontent.com/${environment.githubOwner}/${environment.githubRepo}/${environment.githubBranch}/${this.prototype.thumbnail}`;
+  copied = false;
+  showPlaceholder = signal(false);
+  scale = signal(0.25);
+
+  private _safeUrl: SafeResourceUrl | null = null;
+  private ro?: ResizeObserver;
+
+  get safeUrl(): SafeResourceUrl {
+    if (!this._safeUrl) {
+      const url = `${window.location.origin}/${this.prototype.folder}/index.html`;
+      this._safeUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
+    }
+    return this._safeUrl;
+  }
+
+  ngAfterViewInit() {
+    this.ro = new ResizeObserver(entries => {
+      const w = entries[0].contentRect.width;
+      this.scale.set(w / 1280);
+      this.cdr.markForCheck();
+    });
+    this.ro.observe(this.thumbnailEl.nativeElement);
+  }
+
+  ngOnDestroy() {
+    this.ro?.disconnect();
+  }
+
+  onIframeLoad(iframe: HTMLIFrameElement) {
+    try {
+      const isShell = !!iframe.contentDocument?.querySelector('meta[name="dl-shell"]');
+      if (isShell) this.showPlaceholder.set(true);
+    } catch {}
   }
 
   openDetail() {
