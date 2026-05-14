@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, HostListener, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Prototype, CREATORS } from '../../core/models/prototype.model';
@@ -98,29 +98,56 @@ const PAT_KEY = 'dl_github_pat';
             </div>
           </div>
 
+          <!-- Tags multi-select dropdown -->
           <div class="field">
             <label class="label">Tags</label>
-            <div class="tag-input-wrap">
-              <div class="tag-chips">
+            <div class="tag-selector" (click)="$event.stopPropagation()">
+              <div class="tag-selected" [class.open]="dropdownOpen" (click)="toggleDropdown()">
                 <span *ngFor="let t of form.tags" class="chip">
                   {{ t }}
-                  <button class="chip-remove" (click)="removeTag(t)">×</button>
+                  <button class="chip-remove" (click)="removeTag(t); $event.stopPropagation()">×</button>
                 </span>
+                <span *ngIf="form.tags.length === 0" class="tag-placeholder">Select tags…</span>
+                <svg class="tag-caret" [class.open]="dropdownOpen" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M6 9l6 6 6-6"/>
+                </svg>
+              </div>
+
+              <div class="tag-dropdown" *ngIf="dropdownOpen">
                 <input
-                  class="tag-input"
+                  class="tag-search"
                   type="text"
-                  placeholder="Add tag…"
-                  [(ngModel)]="tagInput"
-                  (keydown.enter)="addTag(); $event.preventDefault()"
-                  (keydown.comma)="addTag(); $event.preventDefault()"
-                  list="tag-suggestions"
+                  placeholder="Search or add tag…"
+                  [(ngModel)]="tagSearch"
+                  (click)="$event.stopPropagation()"
+                  autofocus
                 />
-                <datalist id="tag-suggestions">
-                  <option *ngFor="let t of existingTags" [value]="t"></option>
-                </datalist>
+                <div class="tag-options">
+                  <label
+                    *ngFor="let t of filteredAllTags()"
+                    class="tag-option"
+                    (click)="$event.stopPropagation()"
+                  >
+                    <input
+                      type="checkbox"
+                      [checked]="form.tags.includes(t)"
+                      (change)="toggleTag(t)"
+                    />
+                    {{ t }}
+                  </label>
+                  <button
+                    *ngIf="tagSearch.trim() && !allTagsInclude(tagSearch.trim())"
+                    class="tag-add-new"
+                    (click)="addNewTag(); $event.stopPropagation()"
+                  >
+                    + Add "{{ tagSearch.trim() }}"
+                  </button>
+                  <div *ngIf="filteredAllTags().length === 0 && !tagSearch.trim()" class="tag-empty">
+                    No tags yet. Type to create one.
+                  </div>
+                </div>
               </div>
             </div>
-            <p class="hint">Press Enter or comma to add.</p>
           </div>
 
           <p *ngIf="errorMsg" class="error-msg">{{ errorMsg }}</p>
@@ -159,14 +186,7 @@ const PAT_KEY = 'dl_github_pat';
     .select { cursor: pointer; }
 
     /* Drop zone */
-    .drop-zone {
-      border: 1.5px dashed var(--color-border);
-      border-radius: var(--radius-md);
-      padding: var(--space-6);
-      display: flex; flex-direction: column; align-items: center; gap: var(--space-2);
-      cursor: pointer; transition: border-color var(--transition-fast), background var(--transition-fast);
-      text-align: center; color: var(--color-text-tertiary);
-    }
+    .drop-zone { border: 1.5px dashed var(--color-border); border-radius: var(--radius-md); padding: var(--space-6); display: flex; flex-direction: column; align-items: center; gap: var(--space-2); cursor: pointer; transition: border-color var(--transition-fast), background var(--transition-fast); text-align: center; color: var(--color-text-tertiary); }
     .drop-zone:hover { border-color: var(--color-accent); background: var(--color-accent-subtle); }
     .drop-zone.has-file { border-style: solid; border-color: var(--color-accent); background: var(--color-accent-subtle); color: var(--color-text-primary); }
     .drop-label { font-size: var(--text-sm); margin: 0; }
@@ -174,13 +194,50 @@ const PAT_KEY = 'dl_github_pat';
     .drop-filename { font-size: var(--text-sm); font-weight: var(--weight-medium); margin: 0; color: var(--color-accent); }
     .drop-clear { font-size: var(--text-xs); color: var(--color-text-tertiary); background: none; border: none; cursor: pointer; text-decoration: underline; font-family: var(--font-sans); padding: 0; }
 
-    /* Tags */
-    .tag-input-wrap { border: 1px solid var(--color-border); border-radius: var(--radius-sm); padding: 6px 8px; background: var(--color-surface); transition: border-color var(--transition-fast); }
-    .tag-input-wrap:focus-within { border-color: var(--color-accent); }
-    .tag-chips { display: flex; flex-wrap: wrap; gap: var(--space-1); align-items: center; }
+    /* Tag multi-select */
+    .tag-selector { position: relative; }
+    .tag-selected {
+      display: flex; flex-wrap: wrap; gap: var(--space-1); align-items: center;
+      min-height: 40px; border: 1px solid var(--color-border); border-radius: var(--radius-sm);
+      padding: 6px 8px; background: var(--color-surface); cursor: pointer;
+      transition: border-color var(--transition-fast); box-sizing: border-box;
+    }
+    .tag-selected:hover, .tag-selected.open { border-color: var(--color-accent); }
+    .tag-placeholder { font-size: var(--text-sm); color: var(--color-text-tertiary); flex: 1; }
+    .tag-caret { margin-left: auto; color: var(--color-text-tertiary); transition: transform var(--transition-fast); flex-shrink: 0; }
+    .tag-caret.open { transform: rotate(180deg); }
     .chip { display: flex; align-items: center; gap: 4px; font-size: var(--text-xs); font-weight: var(--weight-medium); color: var(--color-tag-text); background: var(--color-tag-bg); border-radius: var(--radius-full); padding: 3px 8px; }
     .chip-remove { background: none; border: none; cursor: pointer; color: var(--color-tag-text); padding: 0; font-size: 14px; line-height: 1; }
-    .tag-input { border: none; outline: none; font-size: var(--text-sm); font-family: var(--font-sans); background: none; min-width: 120px; flex: 1; }
+
+    .tag-dropdown {
+      position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+      background: var(--color-surface); border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm); box-shadow: var(--shadow-modal);
+      z-index: 200; max-height: 220px; display: flex; flex-direction: column;
+    }
+    .tag-search {
+      border: none; border-bottom: 1px solid var(--color-border);
+      padding: 8px 12px; font-size: var(--text-sm); font-family: var(--font-sans);
+      outline: none; background: var(--color-surface); width: 100%; box-sizing: border-box;
+      border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+    }
+    .tag-options { overflow-y: auto; flex: 1; }
+    .tag-option {
+      display: flex; align-items: center; gap: var(--space-2);
+      padding: 8px 12px; font-size: var(--text-sm); cursor: pointer;
+      transition: background var(--transition-fast); user-select: none;
+    }
+    .tag-option:hover { background: var(--color-surface-hover); }
+    .tag-option input[type="checkbox"] { accent-color: var(--color-accent); cursor: pointer; flex-shrink: 0; }
+    .tag-add-new {
+      display: flex; align-items: center; padding: 8px 12px;
+      font-size: var(--text-sm); font-family: var(--font-sans);
+      color: var(--color-accent); background: none; border: none;
+      cursor: pointer; width: 100%; text-align: left;
+      transition: background var(--transition-fast);
+    }
+    .tag-add-new:hover { background: var(--color-accent-subtle); }
+    .tag-empty { padding: 12px; font-size: var(--text-sm); color: var(--color-text-tertiary); text-align: center; }
 
     /* Buttons */
     .btn-primary { display: flex; align-items: center; gap: var(--space-2); font-size: var(--text-sm); font-weight: var(--weight-medium); font-family: var(--font-sans); color: #fff; background: var(--color-accent); border: none; border-radius: var(--radius-sm); padding: 8px 20px; cursor: pointer; transition: background var(--transition-fast); }
@@ -204,7 +261,6 @@ export class AddPrototypeModalComponent implements OnInit {
   form: Partial<Prototype> & { tags: string[] } = {
     title: '', description: '', creator: 'Craig', folder: '', tags: []
   };
-  tagInput = '';
   pat = '';
   showPatPrompt = false;
   saving = false;
@@ -212,11 +268,26 @@ export class AddPrototypeModalComponent implements OnInit {
   selectedFileName = '';
   fileContent: string | undefined;
 
+  // Tag dropdown state
+  dropdownOpen = false;
+  tagSearch = '';
+  localNewTags: string[] = [];
+
   get editMode() { return !!this.editing; }
 
   get savingLabel(): string {
     if (!this.saving) return this.editMode ? 'Save changes' : 'Add prototype';
     return this.fileContent ? 'Uploading…' : 'Saving…';
+  }
+
+  get allTags(): string[] {
+    const combined = new Set([...this.existingTags, ...this.localNewTags]);
+    return Array.from(combined).sort();
+  }
+
+  @HostListener('document:click')
+  onDocumentClick() {
+    this.dropdownOpen = false;
   }
 
   ngOnInit() {
@@ -233,6 +304,40 @@ export class AddPrototypeModalComponent implements OnInit {
   }
 
   private _folderManuallyEdited = false;
+
+  toggleDropdown() {
+    this.dropdownOpen = !this.dropdownOpen;
+    if (this.dropdownOpen) this.tagSearch = '';
+  }
+
+  filteredAllTags(): string[] {
+    const q = this.tagSearch.trim().toLowerCase();
+    return q ? this.allTags.filter(t => t.includes(q)) : this.allTags;
+  }
+
+  allTagsInclude(value: string): boolean {
+    return this.allTags.some(t => t.toLowerCase() === value.toLowerCase());
+  }
+
+  toggleTag(tag: string) {
+    if (this.form.tags.includes(tag)) {
+      this.form.tags = this.form.tags.filter(t => t !== tag);
+    } else {
+      this.form.tags = [...this.form.tags, tag];
+    }
+  }
+
+  removeTag(tag: string) {
+    this.form.tags = this.form.tags.filter(t => t !== tag);
+  }
+
+  addNewTag() {
+    const tag = this.tagSearch.trim().toLowerCase();
+    if (!tag) return;
+    if (!this.allTagsInclude(tag)) this.localNewTags.push(tag);
+    if (!this.form.tags.includes(tag)) this.form.tags = [...this.form.tags, tag];
+    this.tagSearch = '';
+  }
 
   onFileSelected(event: Event) {
     const file = (event.target as HTMLInputElement).files?.[0];
@@ -262,27 +367,17 @@ export class AddPrototypeModalComponent implements OnInit {
     this.fileContent = undefined;
   }
 
-  addTag() {
-    const t = this.tagInput.trim().toLowerCase().replace(/,/g, '');
-    if (t && !this.form.tags.includes(t)) this.form.tags.push(t);
-    this.tagInput = '';
-  }
-
-  removeTag(tag: string) {
-    this.form.tags = this.form.tags.filter((t) => t !== tag);
-  }
-
   isValid(): boolean {
     return !!(this.form.title?.trim() && this.form.creator && this.form.folder?.trim() && this.pat);
   }
 
   async submit() {
     if (!this.isValid()) return;
-    if (this.tagInput.trim()) this.addTag();
     sessionStorage.setItem(PAT_KEY, this.pat);
     this.showPatPrompt = false;
     this.saving = true;
     this.errorMsg = '';
+    this.dropdownOpen = false;
 
     const prototype: Prototype = {
       id: this.editing?.id ?? this.slugify(this.form.title!),
