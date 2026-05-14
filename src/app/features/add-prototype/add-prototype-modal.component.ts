@@ -210,10 +210,10 @@ const PAT_KEY = 'dl_github_pat';
     .chip-remove { background: none; border: none; cursor: pointer; color: var(--color-tag-text); padding: 0; font-size: 14px; line-height: 1; }
 
     .tag-dropdown {
-      position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+      position: absolute; bottom: calc(100% + 4px); left: 0; right: 0;
       background: var(--color-surface); border: 1px solid var(--color-border);
       border-radius: var(--radius-sm); box-shadow: var(--shadow-modal);
-      z-index: 200; max-height: 220px; display: flex; flex-direction: column;
+      z-index: 200; display: flex; flex-direction: column;
     }
     .tag-search {
       border: none; border-bottom: 1px solid var(--color-border);
@@ -221,7 +221,7 @@ const PAT_KEY = 'dl_github_pat';
       outline: none; background: var(--color-surface); width: 100%; box-sizing: border-box;
       border-radius: var(--radius-sm) var(--radius-sm) 0 0;
     }
-    .tag-options { overflow-y: auto; flex: 1; }
+    .tag-options { overflow-y: auto; max-height: 180px; }
     .tag-option {
       display: flex; align-items: center; gap: var(--space-2);
       padding: 8px 12px; font-size: var(--text-sm); cursor: pointer;
