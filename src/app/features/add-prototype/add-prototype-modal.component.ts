@@ -87,9 +87,31 @@ const PAT_KEY = 'dl_github_pat';
           <div class="row">
             <div class="field">
               <label class="label">Creator <span class="required">*</span></label>
-              <select class="input select" [(ngModel)]="form.creator">
-                <option *ngFor="let c of creators" [value]="c">{{ c }}</option>
-              </select>
+              <div class="creator-combo" (click)="$event.stopPropagation()">
+                <input
+                  class="input"
+                  type="text"
+                  placeholder="Select or type name…"
+                  [(ngModel)]="creatorSearch"
+                  (ngModelChange)="onCreatorInput()"
+                  (focus)="creatorDropdownOpen = true"
+                  autocomplete="off"
+                />
+                <div class="creator-dropdown" *ngIf="creatorDropdownOpen">
+                  <button
+                    *ngFor="let c of filteredCreators()"
+                    class="creator-option"
+                    [class.selected]="form.creator === c"
+                    (click)="selectCreator(c); $event.stopPropagation()"
+                  >{{ c }}</button>
+                  <button
+                    *ngIf="newCreatorValue()"
+                    class="creator-add-new"
+                    (click)="selectNewCreator(); $event.stopPropagation()"
+                  >+ Add "{{ newCreatorValue() }}"</button>
+                  <div *ngIf="filteredCreators().length === 0 && !newCreatorValue()" class="creator-empty">No matches.</div>
+                </div>
+              </div>
             </div>
             <div class="field">
               <label class="label">Folder path <span class="required">*</span></label>
@@ -185,6 +207,25 @@ const PAT_KEY = 'dl_github_pat';
     .textarea { resize: vertical; min-height: 64px; }
     .select { cursor: pointer; }
 
+    /* Creator combobox */
+    .creator-combo { position: relative; }
+    .creator-dropdown {
+      position: absolute; top: calc(100% + 2px); left: 0; right: 0;
+      background: var(--color-surface); border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm); box-shadow: var(--shadow-modal);
+      z-index: 200; max-height: 180px; overflow-y: auto;
+    }
+    .creator-option, .creator-add-new {
+      display: block; width: 100%; padding: 8px 12px;
+      font-size: var(--text-sm); font-family: var(--font-sans);
+      text-align: left; background: none; border: none; cursor: pointer;
+      color: var(--color-text-primary); transition: background var(--transition-fast);
+    }
+    .creator-option:hover, .creator-add-new:hover { background: var(--color-surface-hover); }
+    .creator-option.selected { font-weight: var(--weight-medium); color: var(--color-accent); }
+    .creator-add-new { color: var(--color-accent); }
+    .creator-empty { padding: 8px 12px; font-size: var(--text-sm); color: var(--color-text-tertiary); }
+
     /* Drop zone */
     .drop-zone { border: 1.5px dashed var(--color-border); border-radius: var(--radius-md); padding: var(--space-6); display: flex; flex-direction: column; align-items: center; gap: var(--space-2); cursor: pointer; transition: border-color var(--transition-fast), background var(--transition-fast); text-align: center; color: var(--color-text-tertiary); }
     .drop-zone:hover { border-color: var(--color-accent); background: var(--color-accent-subtle); }
@@ -257,7 +298,6 @@ export class AddPrototypeModalComponent implements OnInit {
   @Output() saved = new EventEmitter<{ prototype: Prototype; pat: string; fileContent?: string }>();
   @Output() cancel = new EventEmitter<void>();
 
-  creators = CREATORS;
   form: Partial<Prototype> & { tags: string[] } = {
     title: '', description: '', creator: 'Craig', folder: '', tags: []
   };
@@ -272,6 +312,15 @@ export class AddPrototypeModalComponent implements OnInit {
   dropdownOpen = false;
   tagSearch = '';
   localNewTags: string[] = [];
+
+  // Creator combobox state
+  creatorSearch = 'Craig';
+  creatorDropdownOpen = false;
+  localNewCreators: string[] = [];
+
+  get allCreators(): string[] {
+    return [...CREATORS, ...this.localNewCreators];
+  }
 
   get editMode() { return !!this.editing; }
 
@@ -288,13 +337,48 @@ export class AddPrototypeModalComponent implements OnInit {
   @HostListener('document:click')
   onDocumentClick() {
     this.dropdownOpen = false;
+    this.creatorDropdownOpen = false;
   }
 
   ngOnInit() {
     const stored = sessionStorage.getItem(PAT_KEY);
     this.showPatPrompt = !stored;
     if (stored) this.pat = stored;
-    if (this.editing) this.form = { ...this.editing, tags: [...this.editing.tags] };
+    if (this.editing) {
+      this.form = { ...this.editing, tags: [...this.editing.tags] };
+      this.creatorSearch = this.editing.creator;
+    }
+  }
+
+  filteredCreators(): string[] {
+    const q = this.creatorSearch.trim().toLowerCase();
+    return q ? this.allCreators.filter(c => c.toLowerCase().includes(q)) : this.allCreators;
+  }
+
+  newCreatorValue(): string {
+    const q = this.creatorSearch.trim();
+    if (!q) return '';
+    return this.allCreators.some(c => c.toLowerCase() === q.toLowerCase()) ? '' : q;
+  }
+
+  selectCreator(name: string) {
+    this.form.creator = name;
+    this.creatorSearch = name;
+    this.creatorDropdownOpen = false;
+  }
+
+  selectNewCreator() {
+    const name = this.creatorSearch.trim();
+    if (!name) return;
+    if (!this.allCreators.some(c => c.toLowerCase() === name.toLowerCase())) {
+      this.localNewCreators.push(name);
+    }
+    this.selectCreator(name);
+  }
+
+  onCreatorInput() {
+    this.form.creator = this.creatorSearch.trim() as any;
+    this.creatorDropdownOpen = true;
   }
 
   onTitleChange(title: string) {
