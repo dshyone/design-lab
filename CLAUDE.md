@@ -35,8 +35,9 @@ GitHub repo (source of truth)
 - `src/app/core/services/ui-state.service.ts` — cross-component Add button trigger (triggerAdd$ Subject)
 - `src/app/features/dashboard/` — prototype grid; showModal/editingPrototype are signals (required for OnPush)
 - `src/app/features/prototype-detail/` — shareable detail page; caches SafeResourceUrl to prevent iframe flicker
+- `src/app/features/prototype-card/` — card with live scaled iframe thumbnail; ResizeObserver computes scale = containerWidth/1280
 - `src/app/features/assets/` — assets tab
-- `src/app/features/add-prototype/` — add/edit prototype modal with drag-and-drop HTML file upload
+- `src/app/features/add-prototype/` — add/edit prototype modal; drag-and-drop file upload, multi-select tag dropdown, creator combobox
 - `src/app/features/add-asset/` — add/edit asset modal
 - `src/environments/environment.ts` — GitHub owner/repo/branch config
 - `src/index.html` — has `<meta name="dl-shell">` so the detail page can detect when no prototype file exists
@@ -48,26 +49,37 @@ Asset     { id, name, type, description, file, tags?, addedBy, date }
 ```
 
 ## Adding prototypes
-- **Via UI**: Click "Add prototype" in the header. Drag-and-drop or browse for an `.html` file. The file is uploaded to `<folder>/index.html` on GitHub, then `prototypes.json` is updated. Requires a GitHub PAT (entered once per session, stored in `sessionStorage` as `dl_github_pat`).
+- **Via UI**: Click "Add prototype" in the header. Fields:
+  - *File*: drag-and-drop or browse for an `.html` file — uploaded to `<folder>/index.html` on GitHub
+  - *Creator*: combobox — select an existing name or type a new one and click `+ Add "…"` to use it inline
+  - *Tags*: multi-select dropdown — click to open, check/uncheck existing tags, type to filter, `+ Add "…"` for new ones; dropdown opens upward and scrolls within the list
+  - *Folder*: auto-slugified from the title; can be overridden manually
+  - Requires a GitHub PAT entered once per session (stored in `sessionStorage` as `dl_github_pat`)
 - **Via CLI**: `node scripts/add-prototype.mjs --title "..." --folder "prototypes/..." --tags "..." --creator "Craig"`
-- Folder is auto-slugified from the title; can be manually overridden.
 
 ## Adding assets
 - **Via UI**: "Add asset" button on the Assets tab. Same PAT flow.
 - **Via CLI**: `node scripts/add-asset.mjs --name "..." --file "assets/..." --type svg`
 
 ## Prototype preview (iframe)
-- The detail page iframes `window.location.origin/<folder>/index.html` (served from Vercel's static output).
+- The detail page and card thumbnails both iframe `window.location.origin/<folder>/index.html` (served from Vercel's static output).
 - `angular.json` includes `prototypes/` and `assets/` in the build assets array so files are bundled into the Vercel output.
 - `vercel.json` rewrites only extensionless paths to `index.html` (`/((?!.*\..*).*)`), so `.html` prototype files are served directly.
-- If no `index.html` exists for a prototype, Vercel serves the Angular shell. The shell has `<meta name="dl-shell">` so the detail page detects this on iframe load and shows "No explorations added yet".
+- If no `index.html` exists, Vercel serves the Angular shell. The shell has `<meta name="dl-shell">` so iframes detect it on load and show an empty state instead.
 - `SafeResourceUrl` is cached per folder in a `Map` — without this, Angular recreates the object on every change detection cycle, causing the iframe to reload (flicker).
+
+## Card thumbnail scaling
+- Each card uses a live scaled-down iframe as its thumbnail (not a static image).
+- The iframe is rendered at 1280×720 inside `.iframe-scale`; `ResizeObserver` computes `scale = containerWidth / 1280` so the preview is proportionally correct at any card size.
+- `pointer-events: none` on the scale wrapper lets card clicks pass through to the router navigation.
+- Cards with no `index.html` show a placeholder icon (same shell detection as the detail page).
 
 ## OnPush + signals pattern
 All state that is mutated from RxJS subscriptions (e.g. `showModal`, `editingPrototype` in DashboardComponent) must be Angular signals, not plain properties. Plain property mutations are invisible to OnPush change detection until the next event cycle.
 
-## Creators (fixed list)
-Craig, Chuka
+## Creators
+Current list in `src/app/core/models/prototype.model.ts`: Craig, Chuka, Adrian.
+The creator field in the modal is a combobox — new names can be added inline without editing the model, but they only persist for that session. To make a new creator permanent, add them to the `CREATORS` constant.
 
 ## GitHub config
 Owner: `dshyone` | Repo: `design-lab` | Branch: `main`
@@ -81,8 +93,9 @@ Push triggers Vercel auto-deploy. Run push from the `design-lab` directory, not 
 Original PRD v0.2 is at `/Users/chukwukaezeoke/Downloads/Design_Lab_PRD_v0.2.docx`
 v0 and v1 are shipped. Remaining items tracked in the PRD.
 
-## Open items (as of April 2026)
+## Open items (as of May 2026)
 - Transfer repo to Ligentia GitHub org (update environment files after)
 - Creator filter (F-05) and sort controls (F-06) not yet built
 - Figma component reference (F-13) — depends on Figma MCP availability
 - Auth model for stakeholder sharing (F-15) — TBD
+- New creator names added via the combobox are session-only; consider a flow to persist them to the CREATORS constant or to prototypes.json

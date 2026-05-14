@@ -1,59 +1,144 @@
-# DesignLab
+# Design Lab
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.8.
+Internal tool for the Ligentix product design team to centralise, browse, and share UI prototypes and design explorations built with Claude Code.
 
-## Development server
+**Live:** https://design-lab-rouge.vercel.app
 
-To start a local development server, run:
+---
 
-```bash
-ng serve
+## What it does
+
+- **Browse prototypes** — card grid with live scaled-down iframe previews, text search, and tag filtering
+- **Shareable links** — each prototype has a full-screen detail page at `/prototype/:id` with metadata, an iframe preview, and a one-click copy link
+- **Add prototypes via UI** — drag-and-drop an HTML file, fill in the form, and it uploads to GitHub automatically
+- **Reference assets** — separate Assets tab for SVGs, HTML templates, and Angular components
+- **No server** — GitHub Contents API is the backend; all data lives in `prototypes.json` and `assets.json`
+
+---
+
+## Stack
+
+- Angular 17+ (standalone components, signals, lazy-loaded routes)
+- CSS custom properties (SwiftDS-aligned design tokens)
+- GitHub Contents API — reads/writes JSON metadata and uploads raw prototype files
+- Deployed to Vercel — auto-deploys on every push to `main`
+
+---
+
+## Repo structure
+
+```
+design-lab/
+├── prototypes.json          — prototype metadata (source of truth)
+├── assets.json              — asset metadata (source of truth)
+├── prototypes/              — prototype HTML files, one subfolder each
+│   └── <folder>/index.html
+├── assets/                  — reusable SVG, HTML, Angular files
+├── scripts/
+│   ├── add-prototype.mjs    — CLI to add a prototype entry
+│   └── add-asset.mjs        — CLI to add an asset entry
+└── src/
+    └── app/
+        ├── core/
+        │   ├── models/       — Prototype, Asset interfaces + CREATORS constant
+        │   └── services/     — GithubService, PrototypeService, AssetService, UiStateService
+        └── features/
+            ├── dashboard/           — prototype card grid
+            ├── prototype-card/      — card with live iframe thumbnail
+            ├── prototype-detail/    — shareable full-screen detail page
+            ├── add-prototype/       — add/edit modal
+            ├── assets/              — assets tab
+            ├── asset-card/          — asset card
+            └── add-asset/           — add/edit asset modal
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+---
 
-## Code scaffolding
+## Adding a prototype
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+### Via the UI
+1. Go to https://design-lab-rouge.vercel.app
+2. Click **Add prototype** in the header
+3. Enter your GitHub Personal Access Token when prompted (stored for the session)
+4. Fill in the fields:
+   - **File** — drag-and-drop or browse for the `.html` prototype file
+   - **Title** — the folder path auto-fills from the title
+   - **Creator** — select from the dropdown or type a new name
+   - **Tags** — multi-select from existing tags or add new ones
+5. Click **Add prototype** — the file uploads to GitHub and the card appears immediately
 
+### Via CLI
 ```bash
-ng generate component component-name
+node scripts/add-prototype.mjs \
+  --title "My exploration" \
+  --folder "prototypes/my-exploration" \
+  --creator "Chuka" \
+  --tags "animation,SwiftDS"
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+Then manually copy the HTML file to `prototypes/my-exploration/index.html` and push.
 
+---
+
+## Adding an asset
+
+### Via the UI
+Go to the **Assets** tab and click **Add asset**.
+
+### Via CLI
 ```bash
-ng generate --help
+node scripts/add-asset.mjs \
+  --name "Ligentix logo" \
+  --file "assets/ligentix-logo.svg" \
+  --type svg
 ```
 
-## Building
+---
 
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
+## Local development
 
 ```bash
-ng test
+cd design-lab
+source ~/.zshrc        # ensure Node is in PATH
+npm install
+npx @angular/cli serve
 ```
 
-## Running end-to-end tests
+Open http://localhost:4200. The app reads `prototypes.json` and `assets.json` from the live GitHub repo.
 
-For end-to-end (e2e) testing, run:
-
+### Building
 ```bash
-ng e2e
+npx @angular/cli build
 ```
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+Output goes to `dist/design-lab`. Vercel runs this automatically on push.
 
-## Additional Resources
+---
 
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+## GitHub config
+
+Repo owner, repo name, and branch are set in `src/environments/environment.ts`:
+
+```typescript
+export const environment = {
+  githubOwner: 'dshyone',
+  githubRepo: 'design-lab',
+  githubBranch: 'main',
+};
+```
+
+Update these when transferring to the Ligentia org.
+
+---
+
+## Creators
+
+Current list: **Craig**, **Chuka**, **Adrian** (defined in `src/app/core/models/prototype.model.ts`).
+
+To add a new permanent creator, add their name to the `CREATORS` constant. New names can also be entered ad-hoc in the modal but are session-only.
+
+---
+
+## Team
+
+Ligentix Product Design — Craig Wetherall, Chuka Ezeoke, Adrian
