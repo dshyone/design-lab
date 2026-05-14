@@ -89,7 +89,7 @@ const PAT_KEY = 'dl_github_pat';
               <label class="label">Creator <span class="required">*</span></label>
               <div class="creator-combo" (click)="$event.stopPropagation()">
                 <input
-                  class="input"
+                  class="input creator-input"
                   type="text"
                   placeholder="Select or type name…"
                   [(ngModel)]="creatorSearch"
@@ -97,6 +97,11 @@ const PAT_KEY = 'dl_github_pat';
                   (focus)="creatorDropdownOpen = true"
                   autocomplete="off"
                 />
+                <button class="creator-caret" type="button" (click)="creatorDropdownOpen = !creatorDropdownOpen; $event.stopPropagation()">
+                  <svg [class.open]="creatorDropdownOpen" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M6 9l6 6 6-6"/>
+                  </svg>
+                </button>
                 <div class="creator-dropdown" *ngIf="creatorDropdownOpen">
                   <button
                     *ngFor="let c of filteredCreators()"
@@ -209,6 +214,16 @@ const PAT_KEY = 'dl_github_pat';
 
     /* Creator combobox */
     .creator-combo { position: relative; }
+    .creator-input { padding-right: 36px; }
+    .creator-caret {
+      position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+      background: none; border: none; cursor: pointer; padding: 4px;
+      color: var(--color-text-tertiary); display: flex; align-items: center;
+      border-radius: var(--radius-sm); transition: color var(--transition-fast);
+    }
+    .creator-caret:hover { color: var(--color-text-primary); }
+    .creator-caret svg { transition: transform var(--transition-fast); }
+    .creator-caret svg.open { transform: rotate(180deg); }
     .creator-dropdown {
       position: absolute; top: calc(100% + 2px); left: 0; right: 0;
       background: var(--color-surface); border: 1px solid var(--color-border);
@@ -299,7 +314,7 @@ export class AddPrototypeModalComponent implements OnInit {
   @Output() cancel = new EventEmitter<void>();
 
   form: Partial<Prototype> & { tags: string[] } = {
-    title: '', description: '', creator: 'Craig', folder: '', tags: []
+    title: '', description: '', creator: '', folder: '', tags: []
   };
   pat = '';
   showPatPrompt = false;
@@ -314,7 +329,7 @@ export class AddPrototypeModalComponent implements OnInit {
   localNewTags: string[] = [];
 
   // Creator combobox state
-  creatorSearch = 'Craig';
+  creatorSearch = '';
   creatorDropdownOpen = false;
   localNewCreators: string[] = [];
 
