@@ -77,11 +77,13 @@ export class PrototypeService {
     this._activeTags.set(new Set());
   }
 
-  async addPrototype(prototype: Prototype, pat: string, fileContent?: string) {
-    if (fileContent) {
-      await firstValueFrom(
-        this.github.uploadFile(`${prototype.folder}/index.html`, fileContent, pat)
-      );
+  async addPrototype(prototype: Prototype, pat: string, files?: { name: string; content: string }[]) {
+    if (files?.length) {
+      for (const file of files) {
+        await firstValueFrom(
+          this.github.uploadFile(`${prototype.folder}/${file.name}`, file.content, pat)
+        );
+      }
     }
     const updated = [prototype, ...this._prototypes()];
     await firstValueFrom(this.github.savePrototypes(updated, this._sha(), pat));

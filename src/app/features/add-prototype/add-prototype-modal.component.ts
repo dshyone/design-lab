@@ -32,12 +32,12 @@ const PAT_KEY = 'dl_github_pat';
           <!-- File upload (new prototypes only) -->
           <div class="field" *ngIf="!editMode">
             <label class="label">
-              Exploration file
-              <span class="optional">(HTML)</span>
+              Exploration files
+              <span class="optional">(ZIP or individual files)</span>
             </label>
             <div
               class="drop-zone"
-              [class.has-file]="selectedFileName"
+              [class.has-file]="uploadedFiles.length > 0"
               (dragover)="$event.preventDefault()"
               (drop)="onDrop($event)"
               (click)="fileInput.click()"
@@ -45,25 +45,29 @@ const PAT_KEY = 'dl_github_pat';
               <input
                 #fileInput
                 type="file"
-                accept=".html"
+                multiple
                 style="display:none"
                 (change)="onFileSelected($event)"
               />
-              <ng-container *ngIf="!selectedFileName">
+              <ng-container *ngIf="uploadedFiles.length === 0">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                   <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
                   <polyline points="17 8 12 3 7 8"/>
                   <line x1="12" y1="3" x2="12" y2="15"/>
                 </svg>
-                <p class="drop-label">Drop an HTML file here or <span class="drop-link">browse</span></p>
+                <p class="drop-label">Drop a ZIP or individual files, or <span class="drop-link">browse</span></p>
+                <p class="hint">CLAUDE.md is excluded automatically</p>
               </ng-container>
-              <ng-container *ngIf="selectedFileName">
+              <ng-container *ngIf="uploadedFiles.length > 0">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
                   <polyline points="14 2 14 8 20 8"/>
                 </svg>
-                <p class="drop-filename">{{ selectedFileName }}</p>
-                <button class="drop-clear" (click)="clearFile($event)">Remove</button>
+                <p class="drop-filename">{{ uploadedFiles.length }} file{{ uploadedFiles.length > 1 ? 's' : '' }} ready</p>
+                <div class="file-list">
+                  <span *ngFor="let f of uploadedFiles" class="file-item">{{ f.name }}</span>
+                </div>
+                <button class="drop-clear" (click)="clearFiles($event)">Remove all</button>
               </ng-container>
             </div>
           </div>
@@ -249,6 +253,8 @@ const PAT_KEY = 'dl_github_pat';
     .drop-link { color: var(--color-accent); text-decoration: underline; }
     .drop-filename { font-size: var(--text-sm); font-weight: var(--weight-medium); margin: 0; color: var(--color-accent); }
     .drop-clear { font-size: var(--text-xs); color: var(--color-text-tertiary); background: none; border: none; cursor: pointer; text-decoration: underline; font-family: var(--font-sans); padding: 0; }
+    .file-list { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; }
+    .file-item { font-size: var(--text-xs); color: var(--color-accent); background: rgba(0,102,255,.08); border-radius: var(--radius-full); padding: 2px 8px; }
 
     /* Tag multi-select */
     .tag-selector { position: relative; }
@@ -310,7 +316,7 @@ const PAT_KEY = 'dl_github_pat';
 export class AddPrototypeModalComponent implements OnInit {
   @Input() existingTags: string[] = [];
   @Input() editing: Prototype | null = null;
-  @Output() saved = new EventEmitter<{ prototype: Prototype; pat: string; fileContent?: string }>();
+  @Output() saved = new EventEmitter<{ prototype: Prototype; pat: string; files?: { name: string; content: string }[] }>();
   @Output() cancel = new EventEmitter<void>();
 
   form: Partial<Prototype> & { tags: string[] } = {
@@ -320,8 +326,7 @@ export class AddPrototypeModalComponent implements OnInit {
   showPatPrompt = false;
   saving = false;
   errorMsg = '';
-  selectedFileName = '';
-  fileContent: string | undefined;
+  uploadedFiles: { name: string; content: string }[] = [];
 
   // Tag dropdown state
   dropdownOpen = false;
@@ -341,7 +346,7 @@ export class AddPrototypeModalComponent implements OnInit {
 
   get savingLabel(): string {
     if (!this.saving) return this.editMode ? 'Save changes' : 'Add prototype';
-    return this.fileContent ? 'Uploading…' : 'Saving…';
+    return this.uploadedFiles.length > 0 ? 'Uploading…' : 'Saving…';
   }
 
   get allTags(): string[] {
@@ -438,32 +443,50 @@ export class AddPrototypeModalComponent implements OnInit {
     this.tagSearch = '';
   }
 
-  onFileSelected(event: Event) {
-    const file = (event.target as HTMLInputElement).files?.[0];
-    if (!file) return;
-    this.readFile(file);
+  async onFileSelected(event: Event) {
+    const picked = Array.from((event.target as HTMLInputElement).files ?? []);
+    if (!picked.length) return;
+    await this.processFiles(picked);
   }
 
-  onDrop(event: DragEvent) {
+  async onDrop(event: DragEvent) {
     event.preventDefault();
-    const file = event.dataTransfer?.files[0];
-    if (file && file.name.endsWith('.html')) this.readFile(file);
+    const dropped = Array.from(event.dataTransfer?.files ?? []);
+    if (!dropped.length) return;
+    await this.processFiles(dropped);
   }
 
-  private readFile(file: File) {
-    this.selectedFileName = file.name;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const result = e.target?.result as string;
-      this.fileContent = result.split(',')[1];
-    };
-    reader.readAsDataURL(file);
+  private async processFiles(files: File[]) {
+    if (files.length === 1 && files[0].name.endsWith('.zip')) {
+      const JSZip = (await import('jszip')).default;
+      const zip = await JSZip.loadAsync(files[0]);
+      const result: { name: string; content: string }[] = [];
+      for (const [name, entry] of Object.entries(zip.files)) {
+        if (entry.dir || name === 'CLAUDE.md' || name.startsWith('__MACOSX')) continue;
+        result.push({ name, content: await entry.async('base64') });
+      }
+      this.uploadedFiles = result;
+    } else {
+      const result: { name: string; content: string }[] = [];
+      for (const file of files) {
+        if (file.name === 'CLAUDE.md') continue;
+        result.push({ name: file.name, content: await this.toBase64(file) });
+      }
+      this.uploadedFiles = result;
+    }
   }
 
-  clearFile(e: Event) {
+  private toBase64(file: File): Promise<string> {
+    return new Promise(resolve => {
+      const reader = new FileReader();
+      reader.onload = e => resolve((e.target!.result as string).split(',')[1]);
+      reader.readAsDataURL(file);
+    });
+  }
+
+  clearFiles(e: Event) {
     e.stopPropagation();
-    this.selectedFileName = '';
-    this.fileContent = undefined;
+    this.uploadedFiles = [];
   }
 
   isValid(): boolean {
@@ -488,7 +511,7 @@ export class AddPrototypeModalComponent implements OnInit {
       folder: this.form.folder!.trim(),
     };
 
-    this.saved.emit({ prototype, pat: this.pat, fileContent: this.fileContent });
+    this.saved.emit({ prototype, pat: this.pat, files: this.uploadedFiles.length ? this.uploadedFiles : undefined });
   }
 
   onSaveError(msg: string) { this.saving = false; this.errorMsg = msg; }
