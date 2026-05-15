@@ -56,7 +56,7 @@ const PAT_KEY = 'dl_github_pat';
                   <line x1="12" y1="3" x2="12" y2="15"/>
                 </svg>
                 <p class="drop-label">Drop a ZIP or individual files, or <span class="drop-link">browse</span></p>
-                <p class="hint">CLAUDE.md is excluded automatically</p>
+                <p class="hint">CLAUDE.md will be included and stored with the prototype</p>
               </ng-container>
               <ng-container *ngIf="uploadedFiles.length > 0">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -462,14 +462,13 @@ export class AddPrototypeModalComponent implements OnInit {
       const zip = await JSZip.loadAsync(files[0]);
       const result: { name: string; content: string }[] = [];
       for (const [name, entry] of Object.entries(zip.files)) {
-        if (entry.dir || name === 'CLAUDE.md' || name.startsWith('__MACOSX')) continue;
+        if (entry.dir || name.startsWith('__MACOSX')) continue;
         result.push({ name, content: await entry.async('base64') });
       }
       this.uploadedFiles = result;
     } else {
       const result: { name: string; content: string }[] = [];
       for (const file of files) {
-        if (file.name === 'CLAUDE.md') continue;
         result.push({ name: file.name, content: await this.toBase64(file) });
       }
       this.uploadedFiles = result;
