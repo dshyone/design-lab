@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable, map } from 'rxjs';
+import { Observable, map, switchMap, forkJoin, of } from 'rxjs';
 import { Prototype } from '../models/prototype.model';
 import { Asset } from '../models/asset.model';
 import { environment } from '../../../environments/environment';
@@ -65,5 +65,26 @@ export class GithubService {
       { message: `Upload ${path} via Design Lab`, content: base64Content, branch: environment.githubBranch },
       { headers }
     );
+  }
+
+  getFolderFiles(folder: string): Observable<{ name: string; content: string }[]> {
+    return this.http
+      .get<{ name: string; type: string; content?: string; download_url: string }[]>(
+        `${this.base}/${folder}`
+      )
+      .pipe(
+        switchMap(items => {
+          const files = items.filter(i => i.type === 'file');
+          return forkJoin(
+            files.map(f =>
+              f.content
+                ? of({ name: f.name, content: atob(f.content.replace(/\n/g, '')) })
+                : this.http.get(f.download_url, { responseType: 'text' }).pipe(
+                    map(text => ({ name: f.name, content: text }))
+                  )
+            )
+          );
+        })
+      );
   }
 }

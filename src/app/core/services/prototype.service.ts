@@ -100,4 +100,46 @@ export class PrototypeService {
       });
     });
   }
+
+  async downloadAsZip(prototype: Prototype) {
+    const JSZip = (await import('jszip')).default;
+    const files = await firstValueFrom(this.github.getFolderFiles(prototype.folder));
+    const zip = new JSZip();
+    files.forEach(f => zip.file(f.name, f.content));
+    zip.file('CLAUDE.md', this.generateClaudeMd(prototype));
+    const blob = await zip.generateAsync({ type: 'blob' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${prototype.id}.zip`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  private generateClaudeMd(p: Prototype): string {
+    return [
+      `# ${p.title}`,
+      '',
+      p.description || '(No description)',
+      '',
+      '## Original metadata (review all fields before re-uploading)',
+      `- Title: ${p.title}`,
+      `- Description: ${p.description || '(none)'}`,
+      `- Creator: ${p.creator}`,
+      `- Date: ${p.date}`,
+      `- Tags: ${p.tags.join(', ') || '(none)'}`,
+      `- Folder: ${p.folder}`,
+      `- Design Lab ID: ${p.id}`,
+      '',
+      '## Re-uploading to Design Lab',
+      '1. Edit the prototype files as needed.',
+      '2. Go to https://design-lab-rouge.vercel.app and click "Add prototype".',
+      '3. Upload the edited HTML file.',
+      '4. Review and update every field — they reflect the original version and may no longer be accurate:',
+      `   - **Title**: was "${p.title}" — update if the exploration has changed significantly`,
+      `   - **Description**: was "${p.description || '(none)'}" — update to reflect what changed`,
+      `   - **Creator**: was ${p.creator} — change to whoever is uploading this version`,
+      `   - **Tags**: were [${p.tags.join(', ') || 'none'}] — add or remove tags to match the current state`,
+      `   - **Folder**: was \`${p.folder}\` — keep the same to overwrite, or use a new path to save as a separate prototype`,
+    ].join('\n');
+  }
 }

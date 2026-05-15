@@ -6,6 +6,7 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { Prototype } from '../../core/models/prototype.model';
+import { PrototypeService } from '../../core/services/prototype.service';
 
 @Component({
   selector: 'dl-prototype-card',
@@ -57,6 +58,14 @@ import { Prototype } from '../../core/models/prototype.model';
             <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/>
           </svg>
           {{ copied ? 'Copied!' : 'Copy link' }}
+        </button>
+        <button class="action-btn" *ngIf="!showPlaceholder()" title="Download ZIP" (click)="download(); $event.stopPropagation()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+          Download
         </button>
         <button class="action-btn" title="Edit" (click)="edit.emit(prototype)">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -190,6 +199,7 @@ export class PrototypeCardComponent implements AfterViewInit, OnDestroy {
   private router = inject(Router);
   private sanitizer = inject(DomSanitizer);
   private cdr = inject(ChangeDetectorRef);
+  private svc = inject(PrototypeService);
 
   copied = false;
   showPlaceholder = signal(false);
@@ -229,6 +239,8 @@ export class PrototypeCardComponent implements AfterViewInit, OnDestroy {
   openDetail() {
     this.router.navigate(['/prototype', this.prototype.id]);
   }
+
+  download() { this.svc.downloadAsZip(this.prototype); }
 
   copyLink() {
     const url = `${window.location.origin}/prototype/${this.prototype.id}`;
