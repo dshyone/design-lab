@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dropdown Prototype</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Roboto+Mono:wght@400&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --slate-800: #1b2326;
+      --slate-300: #b9c7cc;
+      --slate-100: #e7eef0;
+      --cyan-800: #003031;
+      --cyan-200: #80f3ef;
+      --teal: #005b5b;
+      --border-default: #d4dfe2;
+      --border-item: #d1e2e7;
+      --bg-active: #e8fffe;
+      --panel-border: rgba(212, 223, 226, 0.3);
+      --panel-shadow: 0px 4px 10px -6px rgba(0,0,0,0.25);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #f0f4f6;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding-top: 80px;
+      min-height: 100vh;
+    }
+
+    /* ── Dropdown wrapper ── */
+    .dropdown {
+      position: relative;
+      width: 196px;
+    }
+
+    /* ── Trigger ── */
+    .trigger {
+      position: relative;
+      z-index: 2;
+      width: 196px;
+      height: 30px;
+      cursor: pointer;
+      border: none;
+      background: none;
+      padding: 0;
+    }
+
+    .trigger-inner {
+      width: 100%;
+      height: 100%;
+      border-radius: 12px;
+      border: 1px solid var(--border-default);
+      background: #fff;
+      display: flex;
+      align-items: center;
+      padding: 0 6px 0 10px;
+      gap: 0;
+      position: relative;
+      z-index: 0;
+      transition: background 0.18s ease, border-color 0.18s ease;
+    }
+
+    /* Gradient ring pseudo-element — hidden by default, fades in when open.
+       Uses background-clip trick to paint:
+         - padding-box area: #fdfdfd (near-white lighter outline)
+         - border-box area (the 2px transparent border): gradient #005b5b→#80f3ef @ 20% */
+    /* ::before renders the outer gradient ring only — interior is transparent so
+       the trigger-inner's own #e8fffe background shows through unobstructed.
+       The near-white ring (0–2px outside) comes from box-shadow on trigger-inner. */
+    .trigger-inner::before {
+      content: '';
+      position: absolute;
+      inset: -4px;
+      border-radius: 16px;
+      border: 2px solid transparent;
+      background:
+        transparent padding-box,
+        linear-gradient(175deg, rgba(0, 91, 91, 0.20) 0%, rgba(128, 243, 239, 0.20) 100%) border-box;
+      z-index: -1;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.18s ease;
+    }
+
+    .trigger.is-open .trigger-inner,
+    .trigger.has-selection .trigger-inner {
+      background: var(--bg-active);
+      border-color: var(--cyan-200);
+      box-shadow: 0 0 0 2px #fdfdfd;
+    }
+
+    .trigger.is-open .trigger-inner::before,
+    .trigger.has-selection .trigger-inner::before {
+      opacity: 1;
+    }
+
+    .trigger-label {
+      flex: 1;
+      font-size: 12px;
+      font-weight: 400;
+      color: var(--slate-800);
+      letter-spacing: -0.18px;
+      line-height: 1.5;
+      text-align: left;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      transition: color 0.18s ease;
+    }
+
+    .trigger.is-open .trigger-label,
+    .trigger.has-selection .trigger-label {
+      color: var(--cyan-800);
+    }
+
+    .badge {
+      background: #fff;
+      border-radius: 40px;
+      width: 18px;
+      height: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 10px;
+      font-weight: 400;
+      color: #000;
+      letter-spacing: -0.1px;
+      line-height: 1.5;
+      flex-shrink: 0;
+      margin-left: 3px;
+    }
+
+    /* ── Dropdown panel ── */
+    .panel {
+      position: absolute;
+      top: 34px;
+      left: 0;
+      width: 196px;
+      background: #fff;
+      border: 1px solid var(--panel-border);
+      border-radius: 12px;
+      box-shadow: var(--panel-shadow);
+      padding: 8px 0;
+      z-index: 10;
+      overflow: hidden;
+
+      /* Open animation — subtle spring bounce */
+      transform-origin: top center;
+      animation: panelOpen 0.36s cubic-bezier(0.32, 1.25, 0.64, 1) forwards;
+    }
+
+    .panel.is-closing {
+      animation: panelClose 0.18s ease-in forwards;
+      pointer-events: none;
+    }
+
+    @keyframes panelOpen {
+      0%   { opacity: 0; transform: translateY(-6px) scaleY(0.88); }
+      100% { opacity: 1; transform: translateY(0)   scaleY(1); }
+    }
+
+    @keyframes panelClose {
+      0%   { opacity: 1; transform: translateY(0)   scaleY(1); }
+      100% { opacity: 0; transform: translateY(-4px) scaleY(0.93); }
+    }
+
+    /* ── Search section ── */
+    .search-wrap {
+      padding: 0 8px;
+    }
+
+    /* Search outer: #E7EEF0 fill, dual INSIDE stroke (near-white solid + teal→cyan gradient @20%).
+       Uses ::after overlay for the gradient stroke layer. */
+    .search-outer {
+      background: var(--slate-100);
+      border: 1px solid #fdfdfd;
+      border-radius: 12px;
+      padding: 8px 0;
+      position: relative;
+    }
+
+    .search-outer::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      border: 1px solid transparent;
+      background:
+        transparent padding-box,
+        linear-gradient(175deg, rgba(0, 91, 91, 0.20) 0%, rgba(128, 243, 239, 0.20) 100%) border-box;
+      pointer-events: none;
+    }
+
+    .search-field {
+      background: #fff;
+      border: 1px solid rgba(179, 207, 215, 0.6);
+      border-radius: 8px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      padding: 0 6px 0 8px;
+      margin: 0 8px;
+      gap: 4px;
+    }
+
+    .search-field input {
+      flex: 1;
+      min-width: 0;
+      border: none;
+      outline: none;
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      font-weight: 400;
+      color: var(--slate-800);
+      letter-spacing: -0.18px;
+      line-height: 1.5;
+      background: transparent;
+    }
+
+    .search-field input::placeholder {
+      color: var(--slate-300);
+    }
+
+    /* Icon button: 50% white fill + 3% gradient overlay; gradient border lavender→light-gray.
+       Strokes are both INSIDE weight 1: near-white solid on top, #BBB8DF→#F3F3F3 gradient beneath. */
+    .search-btn {
+      width: 22px;
+      height: 22px;
+      border-radius: 6px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid transparent;
+      background:
+        linear-gradient(rgba(255,255,255,0.5), rgba(255,255,255,0.5)) padding-box,
+        linear-gradient(175deg, #bbb8df 0%, #f3f3f3 100%) border-box;
+      /* Near-white highlight overlaid on the gradient border */
+      box-shadow: inset 0 0 0 0.5px rgba(253, 253, 253, 0.85);
+    }
+
+    .search-btn svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    /* ── Options list ── */
+    .options {
+      margin-top: 0;
+    }
+
+    .option-gap {
+      height: 6px;
+    }
+
+    .option {
+      padding: 0 8px;
+      cursor: pointer;
+    }
+
+    .option-inner {
+      border: 1px solid var(--border-item);
+      border-radius: 8px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      padding: 2px 10px;
+      position: relative;
+      transition: background 0.18s ease, border-color 0.2s ease, transform 0.1s ease;
+    }
+
+    /* Gradient outer ring — always exists, fades in/out with is-selected */
+    .option-inner::before {
+      content: '';
+      position: absolute;
+      inset: -2px;
+      border-radius: 10px;
+      border: 1px solid transparent;
+      background:
+        linear-gradient(#fdfdfd, #fdfdfd) padding-box,
+        linear-gradient(175deg, rgba(0, 91, 91, 0.20) 0%, rgba(128, 243, 239, 0.20) 100%) border-box;
+      z-index: -1;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.18s ease;
+    }
+
+    .option-label {
+      font-size: 12px;
+      font-weight: 400;
+      color: var(--slate-800);
+      letter-spacing: -0.18px;
+      line-height: 1.5;
+      white-space: nowrap;
+      flex: 1;
+      transition: opacity 0.16s ease;
+    }
+
+    .option:not(.is-selected):hover .option-inner {
+      background: var(--slate-100);
+      border-color: rgba(0, 91, 91, 0.3);
+    }
+
+    @keyframes optionFadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+
+    .option {
+      opacity: 0;
+      animation: optionFadeIn 0.3s ease forwards;
+      animation-delay: var(--stagger, 0ms);
+    }
+
+    /* Subtle press scale — item feels physically pushed down */
+    .option:active .option-inner {
+      transform: scale(0.985);
+      transition: transform 0.06s ease;
+    }
+
+    /* ── Option fill (selected state overlay) ──
+       Always rendered; fades+scales in via is-selected. Covers the whole
+       option-inner with inset:0 so its cyan border replaces the gray default. */
+    .option-fill {
+      position: absolute;
+      inset: 0;
+      background: var(--bg-active);
+      border: 1px solid var(--cyan-200);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 10px;
+      opacity: 0;
+      transform: scale(0.94);
+      transform-origin: center;
+      pointer-events: none;
+      /* Exit transition (default → faster, no bounce) */
+      transition: opacity 0.16s ease, transform 0.16s ease;
+    }
+
+    .option-fill span {
+      font-size: 12px;
+      font-weight: 400;
+      color: var(--cyan-800);
+      letter-spacing: -0.18px;
+      line-height: 1.5;
+      white-space: nowrap;
+      flex: 1;
+    }
+
+    .option.is-selected .option-fill {
+      opacity: 1;
+      transform: scale(1);
+      /* Enter transition (slightly springy) */
+      transition: opacity 0.22s ease, transform 0.32s cubic-bezier(0.34, 1.45, 0.64, 1);
+    }
+
+    /* When selected, fade out underlying border/bg so the fill's cyan border owns the look */
+    .option.is-selected .option-inner {
+      border-color: transparent;
+      background: transparent;
+    }
+
+    .option.is-selected .option-inner::before {
+      opacity: 1;
+    }
+
+    /* Crossfade: underlying label fades out while option-fill fades in */
+    .option.is-selected .option-label {
+      opacity: 0;
+    }
+
+    .check-icon {
+      flex-shrink: 0;
+      display: block;
+    }
+
+    /* Animated stroke draw — only when freshly selected */
+    .check-icon path {
+      stroke-dasharray: 14;
+      stroke-dashoffset: 0;
+    }
+
+    .option.is-entering .check-icon path {
+      animation: checkDraw 0.34s cubic-bezier(0.4, 0, 0.2, 1) 0.08s both;
+    }
+
+    @keyframes checkDraw {
+      from { stroke-dashoffset: 14; }
+      to   { stroke-dashoffset: 0; }
+    }
+
+    .option.hidden {
+      display: none;
+    }
+
+    /* ── Empty state ── */
+    .no-results {
+      padding: 6px 18px;
+      font-size: 12px;
+      color: var(--slate-300);
+      letter-spacing: -0.18px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+<div class="dropdown" id="dropdown">
+
+  <button class="trigger" id="trigger">
+    <div class="trigger-inner">
+      <span class="trigger-label" id="triggerLabel">Chartered</span>
+      <div class="badge" id="badge">8</div>
+    </div>
+  </button>
+
+  <!-- Panel is injected/removed via JS so animation always plays fresh -->
+
+</div>
+
+<script>
+  const dropdown = document.getElementById('dropdown');
+  const trigger  = document.getElementById('trigger');
+  const labelEl  = document.getElementById('triggerLabel');
+  const badgeEl  = document.getElementById('badge');
+
+  const OPTIONS  = ['Awaiting','Booking','Cancelled','Planned','Confirmed','Error','Pending','Submitted','Non-delivery','Rejected','Acknowledged','Delivered','Multi'];
+  const selected = new Set();
+
+  let panel  = null;
+  let isOpen = false;
+
+  const CHECK_SVG = `<svg class="check-icon" width="13" height="13" viewBox="0 0 13 13" fill="none">
+    <path d="M2.5 6.5L5.5 9.5L10.5 3.5" stroke="#00A0A0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`;
+
+  function buildPanel() {
+    const el = document.createElement('div');
+    el.className = 'panel';
+    el.id = 'panel';
+    el.innerHTML = `
+      <div class="search-wrap">
+        <div class="search-outer">
+          <div class="search-field">
+            <input type="text" id="searchInput" placeholder="Search_" autocomplete="off" spellcheck="false">
+            <div class="search-btn">
+              <svg viewBox="0 0 14 14" fill="none">
+                <circle cx="5.8" cy="5.8" r="3.5" stroke="#8897FF" stroke-width="1.4"/>
+                <path d="M8.6 8.6L11.4 11.4" stroke="#8897FF" stroke-width="1.4" stroke-linecap="round"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="options" id="optionsList">
+        ${OPTIONS.map((opt, i) => `
+          <div class="option-gap"></div>
+          <div class="option ${selected.has(opt) ? 'is-selected' : ''}" data-value="${opt}" style="--stagger:${i * 28}ms">
+            <div class="option-inner">
+              <span class="option-label">${opt}</span>
+              <div class="option-fill">
+                <span>${opt}</span>
+                ${CHECK_SVG}
+              </div>
+            </div>
+          </div>
+        `).join('')}
+        <div class="option-gap"></div>
+      </div>
+      <div class="no-results" id="noResults">No results</div>
+    `;
+    return el;
+  }
+
+  function open() {
+    if (isOpen) return;
+    isOpen = true;
+    trigger.classList.add('is-open');
+
+    panel = buildPanel();
+    dropdown.appendChild(panel);
+
+    const input = panel.querySelector('#searchInput');
+    setTimeout(() => input && input.focus(), 40);
+
+    input.addEventListener('input', () => filterOptions(input.value));
+    panel.querySelectorAll('.option').forEach(opt => {
+      opt.addEventListener('click', () => toggleOption(opt));
+    });
+  }
+
+  function close(instant) {
+    if (!isOpen) return;
+    isOpen = false;
+    trigger.classList.remove('is-open');
+    if (!panel) return;
+
+    if (instant) {
+      panel.remove(); panel = null; return;
+    }
+
+    panel.classList.add('is-closing');
+    panel.addEventListener('animationend', () => {
+      if (panel) { panel.remove(); panel = null; }
+    }, { once: true });
+  }
+
+  const enteringTimers = new WeakMap();
+
+  function toggleOption(optEl) {
+    const value = optEl.dataset.value;
+    const wasSelected = selected.has(value);
+
+    if (wasSelected) {
+      selected.delete(value);
+      optEl.classList.remove('is-selected', 'is-entering');
+      clearTimeout(enteringTimers.get(optEl));
+    } else {
+      selected.add(value);
+      // Restart is-entering cleanly so the check draws again on re-select
+      clearTimeout(enteringTimers.get(optEl));
+      optEl.classList.remove('is-entering');
+      void optEl.offsetWidth; // force reflow to reset the animation
+      optEl.classList.add('is-selected', 'is-entering');
+      enteringTimers.set(optEl, setTimeout(() => {
+        optEl.classList.remove('is-entering');
+      }, 500));
+    }
+    updateTrigger();
+  }
+
+  function updateTrigger() {
+    const count = selected.size;
+    if (count === 0) {
+      labelEl.textContent = 'Select...';
+      badgeEl.style.display = 'none';
+      trigger.classList.remove('has-selection');
+    } else {
+      const items = [...selected];
+      labelEl.textContent = items.length === 1 ? items[0] : `${items[0]}, ${items[1]}${items.length > 2 ? '…' : ''}`;
+      badgeEl.textContent = count;
+      badgeEl.style.display = 'flex';
+      trigger.classList.add('has-selection');
+    }
+  }
+
+  function filterOptions(query) {
+    if (!panel) return;
+    const q = query.trim().toLowerCase();
+    let anyVisible = false;
+
+    panel.querySelectorAll('.option').forEach(opt => {
+      const text = opt.dataset.value.toLowerCase();
+      const show = !q || text.includes(q);
+      opt.classList.toggle('hidden', !show);
+      const gap = opt.previousElementSibling;
+      if (gap && gap.classList.contains('option-gap')) {
+        gap.style.display = show ? '' : 'none';
+      }
+      if (show) anyVisible = true;
+    });
+
+    const noResults = panel.querySelector('#noResults');
+    if (noResults) noResults.style.display = anyVisible ? 'none' : 'block';
+  }
+
+  trigger.addEventListener('click', () => isOpen ? close() : open());
+
+  document.addEventListener('pointerdown', e => {
+    if (isOpen && !dropdown.contains(e.target)) close();
+  });
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && isOpen) close();
+  });
+</script>
+
+</body>
+</html>
