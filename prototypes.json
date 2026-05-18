@@ -1,5 +1,17 @@
 [
   {
+    "id": "dm-client-settings-exploration-1",
+    "title": "DM Client settings exploration 1",
+    "description": "Initial explorations of DM client settings",
+    "creator": "Chuka",
+    "date": "2026-05-18",
+    "tags": [
+      "prototype",
+      "exploration"
+    ],
+    "folder": "prototypes/dm-client-settings-exploration-1"
+  },
+  {
     "id": "tabs-animation-v1",
     "title": "Tabs animation v1",
     "description": "",
