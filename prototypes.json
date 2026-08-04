@@ -1,5 +1,16 @@
 [
   {
+    "id": "notifications-wayfinder",
+    "title": "Notifications - Wayfinder",
+    "description": "This is the page that had some prototyped concept interactions",
+    "creator": "Craig",
+    "date": "2026-08-04",
+    "tags": [
+      "prototype"
+    ],
+    "folder": "prototypes/notifications-wayfinder"
+  },
+  {
     "id": "ux-maturity-survey",
     "title": "UX Maturity Survey",
     "description": "This is the survey Craig is using to baseline twenty twenty six UX maturity based on the NNG scale.",
