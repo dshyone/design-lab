@@ -6,9 +6,11 @@
     "creator": "Craig",
     "date": "2026-08-04",
     "tags": [
-      "prototype"
+      "prototype",
+      "notifications"
     ],
-    "folder": "prototypes/notifications-wayfinder"
+    "folder": "prototypes/notifications-wayfinder",
+    "updatedAt": "2026-08-04"
   },
   {
     "id": "ux-maturity-survey",
