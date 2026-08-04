@@ -385,24 +385,24 @@
 // ── Data ──────────────────────────────────────────────────
 const GOALS = [
   // contributors: everyone who should appear when that person's filter is active
-  {id:'G1', num:1, label:'AI workflows & agents',assignee:'Team',contributors:['CW','AP','CE'],color:'#60a5fa',scores:[4,3,3,3,3,2,null,null,null,null,null,null],dash:[],sunset:false,sunsetMonth:null},
-  {id:'G2', num:2, label:'AIUI',                  assignee:'Team',contributors:['CW'],          color:'#34d399',scores:[1,4,4,3,4,null,null,null,null,null,null,null],dash:[6,3],sunset:false,sunsetMonth:null,pausedMonths:[5]},
-  {id:'G4', num:4, label:'Guidde',                assignee:'AP',  contributors:['AP'],           color:'#fbbf24',scores:[2,3,4,4,3,3,null,null,null,null,null,null],dash:[3,3],sunset:false,sunsetMonth:null},
-  {id:'G5', num:5, label:'Userflow',              assignee:'CW',  contributors:['CW','AP'],      color:'#a78bfa',scores:[4,4,2,3,2,3,null,null,null,null,null,null],dash:[],sunset:false,sunsetMonth:null},
-  {id:'G6', num:6, label:'Swift improvements',    assignee:'Team',contributors:['CW','CE'],      color:'#fb923c',scores:[2,3,1,3,2,2,null,null,null,null,null,null],dash:[8,3,2,3],sunset:false,sunsetMonth:null},
+  {id:'G1', num:1, label:'AI workflows & agents',assignee:'Team',contributors:['CW','AP','CE'],color:'#60a5fa',scores:[4,3,3,3,3,2,2,null,null,null,null,null],dash:[],sunset:false,sunsetMonth:null},
+  {id:'G2', num:2, label:'AIUI',                  assignee:'Team',contributors:['CW'],          color:'#34d399',scores:[1,4,4,3,4,null,null,null,null,null,null,null],dash:[6,3],sunset:false,sunsetMonth:null,pausedMonths:[5,6]},
+  {id:'G4', num:4, label:'Guidde',                assignee:'AP',  contributors:['AP'],           color:'#fbbf24',scores:[2,3,4,4,3,3,1,null,null,null,null,null],dash:[3,3],sunset:false,sunsetMonth:null},
+  {id:'G5', num:5, label:'Userflow',              assignee:'CW',  contributors:['CW','AP'],      color:'#a78bfa',scores:[4,4,2,3,2,3,2,null,null,null,null,null],dash:[],sunset:false,sunsetMonth:null},
+  {id:'G6', num:6, label:'Swift improvements',    assignee:'Team',contributors:['CW','CE'],      color:'#fb923c',scores:[2,3,1,3,2,2,3,null,null,null,null,null],dash:[8,3,2,3],sunset:false,sunsetMonth:null},
   {id:'G8', num:8, label:'Roadmap visibility',    assignee:'CW',  contributors:['CW'],           color:'#686878',scores:[3,1,1,null,null,null,null,null,null,null,null,null],dash:[4,4],sunset:true,sunsetMonth:3},
-  {id:'G9', num:9, label:'Notifications vision',  assignee:'CE',  contributors:['CE','CW','AP'], color:'#f472b6',scores:[2,4,2,4,1,1,null,null,null,null,null,null],dash:[6,2],sunset:false,sunsetMonth:null},
-  {id:'G10',num:10,label:'Listening tour',        assignee:'CE',  contributors:['CE'],           color:'#94a3b8',scores:[null,null,1,2,2,2,null,null,null,null,null,null],dash:[3,3],sunset:false,sunsetMonth:null,startMonth:2},
-  {id:'G11',num:11,label:'Validation practice',   assignee:'AP',  contributors:['AP'],           color:'#86efac',scores:[2,3,3,4,3,4,null,null,null,null,null,null],dash:[8,3],sunset:false,sunsetMonth:null},
-  {id:'G13',num:13,label:'Team learning',         assignee:'Team',contributors:['CW','AP','CE'], color:'#c084fc',scores:[2,3,2,4,null,null,null,null,null,null,null,null],dash:[5,2,2,2],sunset:false,sunsetMonth:null,pausedMonths:[4,5]},
-  {id:'G14',num:14,label:'Design visibility',     assignee:'CE',  contributors:['CE','CW','AP'], color:'#2dd4bf',scores:[3,3,2,3,3,4,null,null,null,null,null,null],dash:[4,2],sunset:false,sunsetMonth:null},
-  {id:'G15',num:15,label:'UX maturity survey',    assignee:'CW',  contributors:['CW'],           color:'#fde047',scores:[null,null,null,null,null,4,null,null,null,null,null,null],dash:[2,2],sunset:false,sunsetMonth:null,startMonth:5},
-  {id:'G16',num:16,label:'Collab lab',            assignee:'CW',  contributors:['CW'],           color:'#fb7185',scores:[2,4,2,1,1,1,null,null,null,null,null,null],dash:[10,3],sunset:false,sunsetMonth:null},
-  {id:'G17',num:17,label:'Delight',               assignee:'Team',contributors:['CW','CE','AP'], color:'#38bdf8',scores:[4,3,3,4,4,3,null,null,null,null,null,null],dash:[6,3,2,3],sunset:false,sunsetMonth:null},
+  {id:'G9', num:9, label:'Notifications vision',  assignee:'CE',  contributors:['CE','CW','AP'], color:'#f472b6',scores:[2,4,2,4,1,1,1,null,null,null,null,null],dash:[6,2],sunset:false,sunsetMonth:null},
+  {id:'G10',num:10,label:'Listening tour',        assignee:'Team',contributors:['CW','AP','CE'], color:'#94a3b8',scores:[null,null,1,2,2,2,4,null,null,null,null,null],dash:[3,3],sunset:false,sunsetMonth:null,startMonth:2},
+  {id:'G11',num:11,label:'Validation practice',   assignee:'Team',contributors:['CW','AP','CE'], color:'#86efac',scores:[2,3,3,4,3,4,2,null,null,null,null,null],dash:[8,3],sunset:false,sunsetMonth:null},
+  {id:'G13',num:13,label:'Team learning',         assignee:'Team',contributors:['CW','AP','CE'], color:'#c084fc',scores:[2,3,2,4,null,null,null,null,null,null,null,null],dash:[5,2,2,2],sunset:false,sunsetMonth:null,pausedMonths:[4,5,6]},
+  {id:'G14',num:14,label:'Design visibility',     assignee:'CE',  contributors:['CE','CW','AP'], color:'#2dd4bf',scores:[3,3,2,3,3,4,4,null,null,null,null,null],dash:[4,2],sunset:false,sunsetMonth:null},
+  {id:'G15',num:15,label:'UX maturity survey',    assignee:'CW',  contributors:['CW'],           color:'#fde047',scores:[null,null,null,null,null,4,4,null,null,null,null,null],dash:[2,2],sunset:false,sunsetMonth:null,startMonth:5},
+  {id:'G16',num:16,label:'Collab lab',            assignee:'CW',  contributors:['CW'],           color:'#fb7185',scores:[2,4,2,1,1,1,3,null,null,null,null,null],dash:[10,3],sunset:false,sunsetMonth:null},
+  {id:'G17',num:17,label:'Delight',               assignee:'Team',contributors:['CW','CE','AP'], color:'#38bdf8',scores:[4,3,3,4,4,3,3,null,null,null,null,null],dash:[6,3,2,3],sunset:false,sunsetMonth:null},
 ];
 
 const MONTH_LABELS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-const ACTUAL_MONTHS = 6;
+const ACTUAL_MONTHS = 7;
 
 // Today's date — determines YTD and future month disabling
 const TODAY = new Date();
