@@ -26,11 +26,26 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
       <div class="toolbar">
         <dl-search-bar (searched)="svc.setSearch($event)" />
         <dl-tag-filter
+          label="Creators"
+          [tags]="svc.allCreators()"
+          [activeTags]="svc.activeCreators()"
+          (toggle)="svc.toggleCreator($event)"
+          [showClear]="false"
+        />
+        <dl-tag-filter
+          label="Tags"
           [tags]="svc.allTags()"
           [activeTags]="svc.activeTags()"
           (toggle)="svc.toggleTag($event)"
-          (clear)="svc.clearFilters()"
+          [showClear]="false"
         />
+        <button
+          *ngIf="svc.activeTags().size > 0 || svc.activeCreators().size > 0"
+          class="clear-link"
+          (click)="svc.clearFilters()"
+        >
+          Clear filters
+        </button>
       </div>
 
       <!-- Loading -->

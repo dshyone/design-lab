@@ -100,7 +100,8 @@ v0 and v1 are shipped. Remaining items tracked in the PRD.
 
 ## Open items (as of June 2026)
 - ~~Transfer repo to Ligentia GitHub org~~ DONE (2026-06-16): primary is `Ligentia/design-lab`, env files point at Ligentia, canonical site is design-lab-hazel. `dshyone` kept as a git push mirror (origin has both pushurls).
-- Creator filter (F-05) and sort controls (F-06) not yet built
+- ~~Creator filter (F-05)~~ DONE: labeled "Creators" pill row above the "Tags" row on the dashboard. Reuses `TagFilterComponent` via a new optional `label` input (and `showClear` to suppress the per-row clear button — a single "Clear filters" affordance lives in the dashboard toolbar). State mirrors tags in `PrototypeService`: `_activeCreators` signal, `allCreators` computed, `toggleCreator()`, and `clearFilters()` clears all three. Creator + tag + search combine with AND.
+- Sort controls (F-06) not yet built
 - Figma component reference (F-13) — depends on Figma MCP availability
 - Auth model for stakeholder sharing (F-15) — TBD
 - New creator names added via the combobox are session-only; consider a flow to persist them to the CREATORS constant or to prototypes.json

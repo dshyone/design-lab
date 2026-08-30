@@ -13,11 +13,13 @@ export class PrototypeService {
   private _error = signal<string | null>(null);
   private _search = signal('');
   private _activeTags = signal<Set<string>>(new Set());
+  private _activeCreators = signal<Set<string>>(new Set());
 
   readonly loading = this._loading.asReadonly();
   readonly error = this._error.asReadonly();
   readonly search = this._search.asReadonly();
   readonly activeTags = this._activeTags.asReadonly();
+  readonly activeCreators = this._activeCreators.asReadonly();
   readonly sha = this._sha.asReadonly();
   readonly all = this._prototypes.asReadonly();
 
@@ -31,9 +33,16 @@ export class PrototypeService {
     return Array.from(tags).sort();
   });
 
+  readonly allCreators = computed(() => {
+    const creators = new Set<string>();
+    this._prototypes().forEach((p) => creators.add(p.creator));
+    return Array.from(creators).sort();
+  });
+
   readonly filtered = computed(() => {
     const q = this._search().toLowerCase().trim();
     const active = this._activeTags();
+    const activeCreators = this._activeCreators();
     return this._prototypes()
       .filter((p) => {
         if (p.archived) return false;
@@ -41,7 +50,9 @@ export class PrototypeService {
           !q || p.title.toLowerCase().includes(q) || p.description.toLowerCase().includes(q);
         const matchesTags =
           active.size === 0 || p.tags.some((t) => active.has(t));
-        return matchesSearch && matchesTags;
+        const matchesCreators =
+          activeCreators.size === 0 || activeCreators.has(p.creator);
+        return matchesSearch && matchesTags && matchesCreators;
       })
       .sort((a, b) => b.date.localeCompare(a.date));
   });
@@ -81,9 +92,16 @@ export class PrototypeService {
     this._activeTags.set(current);
   }
 
+  toggleCreator(creator: string) {
+    const current = new Set(this._activeCreators());
+    current.has(creator) ? current.delete(creator) : current.add(creator);
+    this._activeCreators.set(current);
+  }
+
   clearFilters() {
     this._search.set('');
     this._activeTags.set(new Set());
+    this._activeCreators.set(new Set());
   }
 
   async uploadFiles(prototype: Prototype, pat: string, files: { name: string; content: string }[]) {

@@ -8,6 +8,7 @@ import { CommonModule } from '@angular/common';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="tag-filter" *ngIf="tags.length > 0">
+      <span *ngIf="label" class="filter-label">{{ label }}</span>
       <button
         *ngFor="let tag of tags"
         class="tag-pill"
@@ -16,7 +17,7 @@ import { CommonModule } from '@angular/common';
       >
         {{ tag }}
       </button>
-      <button *ngIf="activeTags.size > 0" class="clear-btn" (click)="clear.emit()">
+      <button *ngIf="showClear && activeTags.size > 0" class="clear-btn" (click)="clear.emit()">
         Clear filters
       </button>
     </div>
@@ -27,6 +28,13 @@ import { CommonModule } from '@angular/common';
       flex-wrap: wrap;
       gap: var(--space-2);
       align-items: center;
+    }
+    .filter-label {
+      font-size: var(--text-xs);
+      font-weight: var(--weight-medium);
+      color: var(--color-text-tertiary);
+      font-family: var(--font-sans);
+      min-width: 60px;
     }
     .tag-pill {
       font-size: var(--text-xs);
@@ -66,6 +74,8 @@ import { CommonModule } from '@angular/common';
 export class TagFilterComponent {
   @Input({ required: true }) tags: string[] = [];
   @Input({ required: true }) activeTags: Set<string> = new Set();
+  @Input() label?: string;
+  @Input() showClear = true;
   @Output() toggle = new EventEmitter<string>();
   @Output() clear = new EventEmitter<void>();
 }
