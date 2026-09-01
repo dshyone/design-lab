@@ -33,7 +33,7 @@ const PAT_KEY = 'dl_github_pat';
           <div class="field">
             <label class="label">
               {{ editMode ? 'Replace files' : 'Exploration files' }}
-              <span class="optional">{{ editMode ? '(optional — leave empty to keep existing)' : '(ZIP or individual files)' }}</span>
+              <span class="optional">{{ editMode ? '(optional — leave empty to keep existing)' : '(ZIP of a prototype folder, or individual files)' }}</span>
             </label>
             <div
               class="drop-zone"
@@ -62,14 +62,14 @@ const PAT_KEY = 'dl_github_pat';
                   <line x1="12" y1="3" x2="12" y2="15"/>
                 </svg>
                 <p class="drop-label">Drop a ZIP or individual files, or <span class="drop-link">browse</span></p>
-                <p class="hint">CLAUDE.md will be included and stored with the prototype</p>
+                <p class="hint">Multi-page? Zip the folder (must include a root index.html) — subfolders &amp; links are preserved</p>
               </ng-container>
               <ng-container *ngIf="!processing && uploadedFiles.length > 0">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
                   <polyline points="14 2 14 8 20 8"/>
                 </svg>
-                <p class="drop-filename">{{ uploadedFiles.length }} file{{ uploadedFiles.length > 1 ? 's' : '' }} ready</p>
+                <p class="drop-filename">{{ uploadedFiles.length }} file{{ uploadedFiles.length > 1 ? 's' : '' }} ready<span *ngIf="pageCount > 1"> · {{ pageCount }} pages</span></p>
                 <div class="file-list">
                   <span *ngFor="let f of uploadedFiles" class="file-item">{{ f.name }}</span>
                 </div>
@@ -482,12 +482,30 @@ export class AddPrototypeModalComponent implements OnInit {
       if (files.length === 1 && files[0].name.endsWith('.zip')) {
         const JSZip = (await import('jszip')).default;
         const zip = await JSZip.loadAsync(files[0]);
+        // Keep real files only; skip directories, macOS junk, and any dotfile at
+        // any depth (e.g. .DS_Store nested inside the zipped folder).
+        const entries = Object.entries(zip.files).filter(
+          ([name, entry]) =>
+            !entry.dir &&
+            !name.includes('__MACOSX') &&
+            !name.split('/').some(seg => seg.startsWith('.'))
+        );
+        // Preserve each file's RELATIVE path (multi-page support), but strip a
+        // single common top-level folder so a "Compress"-style zip that wraps
+        // everything under my-proto/ lands index.html at the folder root.
+        const paths = this.stripCommonRoot(entries.map(([name]) => name));
         const result: { name: string; content: string }[] = [];
-        for (const [name, entry] of Object.entries(zip.files)) {
-          if (entry.dir || name.includes('__MACOSX') || name.startsWith('.')) continue;
-          const basename = name.split('/').filter(s => s.length > 0).pop()!;
-          result.push({ name: basename, content: await entry.async('base64') });
+        for (let i = 0; i < entries.length; i++) {
+          result.push({ name: paths[i], content: await entries[i][1].async('base64') });
         }
+        // A multi-page prototype must have a root index.html as its entry page.
+        if (!result.some(f => f.name === 'index.html')) {
+          this.uploadedFiles = [];
+          this.errorMsg =
+            'ZIP must contain an index.html at its top level (the prototype’s entry page).';
+          return;
+        }
+        this.errorMsg = '';
         this.uploadedFiles = result;
       } else {
         const result: { name: string; content: string }[] = [];
@@ -502,6 +520,26 @@ export class AddPrototypeModalComponent implements OnInit {
       // The reads above resolve outside any event, so nudge zoneless CD to render the result.
       this.cdr.markForCheck();
     }
+  }
+
+  // Remove a shared leading folder segment from every path, repeatedly, as long
+  // as all paths still share one common first segment (and none is a root file).
+  // ['demo/index.html','demo/css/app.css'] -> ['index.html','css/app.css'].
+  // ['index.html','css/app.css'] is left untouched (index.html has no folder).
+  get pageCount(): number {
+    return this.uploadedFiles.filter(f => f.name.toLowerCase().endsWith('.html')).length;
+  }
+
+  private stripCommonRoot(paths: string[]): string[] {
+    let result = [...paths];
+    while (
+      result.length > 0 &&
+      result.every(p => p.includes('/')) &&
+      new Set(result.map(p => p.split('/')[0])).size === 1
+    ) {
+      result = result.map(p => p.slice(p.indexOf('/') + 1));
+    }
+    return result;
   }
 
   private toBase64(file: File): Promise<string> {

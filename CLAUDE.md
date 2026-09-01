@@ -51,7 +51,7 @@ Asset     { id, name, type, description, file, tags?, addedBy, date }
 
 ## Adding prototypes
 - **Via UI**: Click "Add prototype" in the header. Fields:
-  - *File*: drag-and-drop or browse for an `.html` file — uploaded to `<folder>/index.html` on GitHub
+  - *File*: drag-and-drop or browse for a single `.html` file (uploaded as `<folder>/index.html`) **or a ZIP for a multi-page prototype** (see "Multi-page prototypes" below)
   - *Creator*: combobox — select an existing name or type a new one and click `+ Add "…"` to use it inline
   - *Tags*: multi-select dropdown — click to open, check/uncheck existing tags, type to filter, `+ Add "…"` for new ones; dropdown opens upward and scrolls within the list
   - *Folder*: auto-slugified from the title; can be overridden manually
@@ -61,6 +61,15 @@ Asset     { id, name, type, description, file, tags?, addedBy, date }
 ## Adding assets
 - **Via UI**: "Add asset" button on the Assets tab. Same PAT flow.
 - **Via CLI**: `node scripts/add-asset.mjs --name "..." --file "assets/..." --type svg`
+
+## Multi-page prototypes (ZIP upload)
+- A prototype folder can hold multiple HTML pages + assets that link to each other with relative URLs. Serving already supports this (see "Prototype preview" — nested files are copied recursively and served directly; the iframe is cross-document so relative links resolve).
+- The only special handling is in the modal's `processFiles()` (`add-prototype-modal.component.ts`). ZIP-extraction contract:
+  - **Preserve each entry's relative path** (`css/app.css`, `about.html`) — do NOT flatten to basename.
+  - **Strip a single common top-level folder** via `stripCommonRoot()` so a "Compress"-style zip nested under `my-proto/` lands `index.html` at the folder root.
+  - **Require a root `index.html`** (entry page) — otherwise the modal sets `errorMsg` and clears `uploadedFiles`, blocking submit. This is why the preview components can stay hardcoded to `index.html` (no `entryFile` field needed).
+  - Skips `entry.dir`, `__MACOSX`, and dotfiles at any depth; content stays base64 (handles binary assets).
+- The non-ZIP (individual files) branch is unchanged: a lone `.html` is still renamed to `index.html` (single-page path).
 
 ## Prototype preview (iframe)
 - The detail page and card thumbnails both iframe `window.location.origin/<folder>/index.html` (served from Vercel's static output).
@@ -100,8 +109,9 @@ v0 and v1 are shipped. Remaining items tracked in the PRD.
 
 ## Open items (as of June 2026)
 - ~~Transfer repo to Ligentia GitHub org~~ DONE (2026-06-16): primary is `Ligentia/design-lab`, env files point at Ligentia, canonical site is design-lab-hazel. `dshyone` kept as a git push mirror (origin has both pushurls).
-- ~~Creator filter (F-05)~~ DONE: labeled "Creators" pill row above the "Tags" row on the dashboard. Reuses `TagFilterComponent` via a new optional `label` input (and `showClear` to suppress the per-row clear button — a single "Clear filters" affordance lives in the dashboard toolbar). State mirrors tags in `PrototypeService`: `_activeCreators` signal, `allCreators` computed, `toggleCreator()`, and `clearFilters()` clears all three. Creator + tag + search combine with AND.
+- ~~Creator filter (F-05)~~ DONE: labeled "Creators" pill row above the "Tags" row on the dashboard. Reuses `TagFilterComponent` via a new optional `label` input (and `showClear` to suppress the per-row clear button — a single "Clear filters" affordance lives in the dashboard toolbar). State mirrors tags in `PrototypeService`: `_activeCreators` signal, `allCreators` computed, `toggleCreator()`, and `clearFilters()` clears all three. Creator + tag + search combine with AND. Each pill row also has an "All" chip (`showAll` input + `selectAll` output) that is active by default (when that row's active set is empty) and, when clicked, clears just that row via `clearCreators()` / `clearTags()`.
 - Sort controls (F-06) not yet built
+- Multi-page ZIP upload is shipped, but **editing** a prototype with a new ZIP overwrites files by path and does NOT delete files from the prior version that are absent in the new ZIP (stale files linger). Needs a recursive folder-list + delete flow to fully clean up.
 - Figma component reference (F-13) — depends on Figma MCP availability
 - Auth model for stakeholder sharing (F-15) — TBD
 - New creator names added via the combobox are session-only; consider a flow to persist them to the CREATORS constant or to prototypes.json

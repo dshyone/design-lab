@@ -8,7 +8,7 @@ Internal tool for the Ligentix product design team to centralise, browse, and sh
 
 ## What it does
 
-- **Browse prototypes** — card grid with live scaled-down iframe previews, text search, and tag filtering
+- **Browse prototypes** — card grid with live scaled-down iframe previews, text search, tag filtering, and creator filtering (each filter row has an "All" chip, selected by default; creator + tag + search combine)
 - **Shareable links** — each prototype has a full-screen detail page at `/prototype/:id` with metadata, an iframe preview, and a one-click copy link
 - **Add prototypes via UI** — drag-and-drop an HTML file, fill in the form, and it uploads to GitHub automatically
 - **Reference assets** — separate Assets tab for SVGs, HTML templates, and Angular components
@@ -61,11 +61,18 @@ design-lab/
 2. Click **Add prototype** in the header
 3. Enter your GitHub Personal Access Token when prompted (stored for the session)
 4. Fill in the fields:
-   - **File** — drag-and-drop or browse for the `.html` prototype file
+   - **File** — drag-and-drop or browse for a single `.html` file, **or a ZIP for a multi-page prototype** (see below)
    - **Title** — the folder path auto-fills from the title
    - **Creator** — select from the dropdown or type a new name
    - **Tags** — multi-select from existing tags or add new ones
-5. Click **Add prototype** — the file uploads to GitHub and the card appears immediately
+5. Click **Add prototype** — the file(s) upload to GitHub and the card appears immediately
+
+#### Multi-page prototypes (ZIP)
+A prototype can be more than one page. Zip its folder and drop the `.zip` in — the folder structure is preserved, so relative links between pages and assets keep working (e.g. `<a href="about.html">`, `<link href="css/app.css">`, `<img src="img/logo.svg">`).
+
+- The ZIP **must contain an `index.html` at its top level** — that's the entry page the preview loads. If it doesn't, the modal blocks the upload.
+- A single wrapping folder is fine: a "Compress"-style ZIP that nests everything under `my-proto/` is unwrapped automatically so `index.html` lands at the prototype root.
+- **Known limitation:** editing a prototype and uploading a new ZIP overwrites files by path but does **not** delete files from the previous version that are absent in the new ZIP — stale files remain in the folder.
 
 ### Via CLI
 ```bash
