@@ -10,6 +10,14 @@ import { CommonModule } from '@angular/common';
     <div class="tag-filter" *ngIf="tags.length > 0">
       <span *ngIf="label" class="filter-label">{{ label }}</span>
       <button
+        *ngIf="showAll"
+        class="tag-pill"
+        [class.active]="activeTags.size === 0"
+        (click)="selectAll.emit()"
+      >
+        All
+      </button>
+      <button
         *ngFor="let tag of tags"
         class="tag-pill"
         [class.active]="activeTags.has(tag)"
@@ -76,6 +84,8 @@ export class TagFilterComponent {
   @Input({ required: true }) activeTags: Set<string> = new Set();
   @Input() label?: string;
   @Input() showClear = true;
+  @Input() showAll = false;
   @Output() toggle = new EventEmitter<string>();
   @Output() clear = new EventEmitter<void>();
+  @Output() selectAll = new EventEmitter<void>();
 }

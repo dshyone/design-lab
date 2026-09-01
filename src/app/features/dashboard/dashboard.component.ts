@@ -30,6 +30,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
           [tags]="svc.allCreators()"
           [activeTags]="svc.activeCreators()"
           (toggle)="svc.toggleCreator($event)"
+          [showAll]="true"
+          (selectAll)="svc.clearCreators()"
           [showClear]="false"
         />
         <dl-tag-filter
@@ -37,6 +39,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
           [tags]="svc.allTags()"
           [activeTags]="svc.activeTags()"
           (toggle)="svc.toggleTag($event)"
+          [showAll]="true"
+          (selectAll)="svc.clearTags()"
           [showClear]="false"
         />
         <button

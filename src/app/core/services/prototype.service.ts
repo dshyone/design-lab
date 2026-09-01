@@ -98,6 +98,14 @@ export class PrototypeService {
     this._activeCreators.set(current);
   }
 
+  clearTags() {
+    this._activeTags.set(new Set());
+  }
+
+  clearCreators() {
+    this._activeCreators.set(new Set());
+  }
+
   clearFilters() {
     this._search.set('');
     this._activeTags.set(new Set());
